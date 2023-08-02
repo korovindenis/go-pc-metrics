@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
+	"regexp"
 )
 
 func CheckMethodAndContentType(next http.Handler) http.Handler {
@@ -17,8 +17,8 @@ func CheckMethodAndContentType(next http.Handler) http.Handler {
 			return
 		}
 
-		if len(strings.Split(r.RequestURI, "/")) == 4 {
-			http.Error(w, "Metric Name not found!", http.StatusNotFound)
+		if re := regexp.MustCompile(`/update/[a-zA-Z]+/[a-zA-Z]+/\d+[/]{0,}$`); !re.MatchString(r.URL.Path) {
+			http.Error(w, "Invalid URL format!", http.StatusNotFound)
 			return
 		}
 
