@@ -47,7 +47,7 @@ func (s serverHandler) ReceptionMetics(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err = s.srvUsecase.SaveGauge(namedURL.metricName, metricVal); err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			http.Error(w, "Not Implemented server error", http.StatusNotImplemented)
 			return
 		}
 	case "counter":
@@ -58,11 +58,11 @@ func (s serverHandler) ReceptionMetics(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err = s.srvUsecase.SaveCounter(namedURL.metricName, metricVal); err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			http.Error(w, "Not Implemented server error", http.StatusNotImplemented)
 			return
 		}
 	default:
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, "Not Implemented server error", http.StatusNotImplemented)
 		return
 	}
 
