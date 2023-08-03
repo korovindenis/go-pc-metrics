@@ -22,7 +22,7 @@ func New(usecase usecaseServer.IServerUsecase) (IServerHandler, error) {
 	}, nil
 }
 
-type reqUri struct {
+type reqURI struct {
 	metricType string
 	metricName string
 	metricVal  string
@@ -30,39 +30,39 @@ type reqUri struct {
 
 func (s serverHandler) ReceptionMetics(w http.ResponseWriter, r *http.Request) {
 	// get metric prop from url
-	origUrl := strings.Split(r.RequestURI, "/")[2:]
-	namedUrl := reqUri{
-		metricType: origUrl[0],
-		metricName: origUrl[1],
-		metricVal:  origUrl[2],
+	origURL := strings.Split(r.RequestURI, "/")[2:]
+	namedURL := reqURI{
+		metricType: origURL[0],
+		metricName: origURL[1],
+		metricVal:  origURL[2],
 	}
 
 	// run usecases
-	switch namedUrl.metricType {
+	switch namedURL.metricType {
 	case "gauge":
-		metricVal, err := strconv.ParseFloat(namedUrl.metricVal, 64)
+		metricVal, err := strconv.ParseFloat(namedURL.metricVal, 64)
 		if err != nil {
 			http.Error(w, "Metric value is wrong type!", http.StatusBadRequest)
 			return
 		}
 
-		if err = s.srvUsecase.SaveGauge(namedUrl.metricName, metricVal); err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		if err = s.srvUsecase.SaveGauge(namedURL.metricName, metricVal); err != nil {
+			http.Error(w, "Not Implemented server error", http.StatusNotImplemented)
 			return
 		}
 	case "counter":
-		metricVal, err := strconv.ParseInt(namedUrl.metricVal, 10, 64)
+		metricVal, err := strconv.ParseInt(namedURL.metricVal, 10, 64)
 		if err != nil {
 			http.Error(w, "Metric value is wrong type!", http.StatusBadRequest)
 			return
 		}
 
-		if err = s.srvUsecase.SaveCounter(namedUrl.metricName, metricVal); err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		if err = s.srvUsecase.SaveCounter(namedURL.metricName, metricVal); err != nil {
+			http.Error(w, "Not Implemented server error", http.StatusNotImplemented)
 			return
 		}
 	default:
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, "Not Implemented server error", http.StatusNotImplemented)
 		return
 	}
 
