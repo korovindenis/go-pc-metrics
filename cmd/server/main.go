@@ -10,7 +10,7 @@ import (
 	"github.com/korovindenis/go-pc-metrics/internal/http/server"
 )
 
-const httpAddress = "0.0.0.0:8080"
+const httpAddress = "localhost:8080"
 
 func main() {
 	// init bd
