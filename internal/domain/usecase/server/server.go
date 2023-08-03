@@ -1,4 +1,4 @@
-package serverUsecase
+package serverusecase
 
 import "github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 

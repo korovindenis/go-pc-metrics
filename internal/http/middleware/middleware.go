@@ -12,7 +12,7 @@ func CheckMethodAndContentType(next http.Handler) http.Handler {
 			return
 		}
 
-		if contentType := r.Header.Get("content-Type"); contentType != "text/plain" {
+		if contentType := r.Header.Get("content-type"); contentType != "text/plain" {
 			http.Error(w, "Only Content-Type is text/plain!", http.StatusMethodNotAllowed)
 			return
 		}
