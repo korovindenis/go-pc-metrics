@@ -1,10 +1,10 @@
-package server
+package serverapp
 
 import (
 	"net/http"
 
-	"github.com/korovindenis/go-pc-metrics/internal/http/handler"
-	"github.com/korovindenis/go-pc-metrics/internal/http/middleware"
+	"github.com/korovindenis/go-pc-metrics/internal/server/handler"
+	"github.com/korovindenis/go-pc-metrics/internal/server/middleware"
 )
 
 // server main

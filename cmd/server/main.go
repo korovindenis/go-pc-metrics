@@ -5,9 +5,9 @@ import (
 	"os"
 
 	storage "github.com/korovindenis/go-pc-metrics/internal/adapter/storage/memory"
-	usecaseServer "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/server"
-	"github.com/korovindenis/go-pc-metrics/internal/http/handler"
-	"github.com/korovindenis/go-pc-metrics/internal/http/server"
+	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/server"
+	"github.com/korovindenis/go-pc-metrics/internal/server/handler"
+	server "github.com/korovindenis/go-pc-metrics/internal/server/serverapp"
 )
 
 const httpAddress = "localhost:8080"
@@ -21,7 +21,7 @@ func main() {
 	}
 
 	// init server usecases
-	srvUscs, err := usecaseServer.New(storage)
+	srvUscs, err := serverusecase.New(storage)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)

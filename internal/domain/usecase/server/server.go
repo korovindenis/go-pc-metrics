@@ -1,9 +1,14 @@
 package serverusecase
 
-import "github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+type IStorage interface {
+	SaveGauge(gaugeName string, gaugeValue float64) error
+
+	SaveCounter(counterName string, counterValue int64) error
+	GetCounter(counterName string) (int64, error)
+}
 
 type serverUsecase struct {
-	storage entity.IStorage
+	storage IStorage
 }
 
 type IServerUsecase interface {
@@ -11,7 +16,7 @@ type IServerUsecase interface {
 	SaveCounter(counterName string, counterValue int64) error
 }
 
-func New(storage entity.IStorage) (IServerUsecase, error) {
+func New(storage IStorage) (IServerUsecase, error) {
 	return &serverUsecase{
 		storage: storage,
 	}, nil
