@@ -7,3 +7,9 @@ type MetricsType struct {
 	Gauge   GaugeType
 	Counter CounterType
 }
+
+type ReqURI struct {
+	MetricType string
+	MetricName string
+	MetricVal  string
+}

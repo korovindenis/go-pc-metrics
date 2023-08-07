@@ -23,6 +23,14 @@ func (m *storage) SaveGauge(gaugeName string, gaugeValue float64) error {
 	return nil
 }
 
+func (m *storage) GetGauge(gaugeName string) (float64, error) {
+	val, ok := m.MetricsType.Gauge[gaugeName]
+	if !ok {
+		return val, entity.MetricNotFoundErr
+	}
+	return val, nil
+}
+
 func (m *storage) SaveCounter(counterName string, counterValue int64) error {
 	m.MetricsType.Counter[counterName] = counterValue
 
@@ -30,6 +38,17 @@ func (m *storage) SaveCounter(counterName string, counterValue int64) error {
 }
 
 func (m *storage) GetCounter(counterName string) (int64, error) {
-	return m.MetricsType.Counter[counterName], nil
+	val, ok := m.MetricsType.Counter[counterName]
+	if !ok {
+		return val, entity.MetricNotFoundErr
+	}
+	return val, nil
 
+}
+
+func (m *storage) GetAllData() (entity.MetricsType, error) {
+	return entity.MetricsType{
+		Gauge:   m.MetricsType.Gauge,
+		Counter: m.MetricsType.Counter,
+	}, nil
 }

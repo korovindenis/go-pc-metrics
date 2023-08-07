@@ -75,7 +75,7 @@ func httpReq(logger logger.ILogger, httpAddress, metricType, metricName, metricV
 	logger.Println(uri)
 
 	// HTTP POST request
-	req, err := http.NewRequest("POST", uri, strings.NewReader(""))
+	req, err := http.NewRequest(http.MethodPost, uri, strings.NewReader(""))
 	if err != nil {
 		return err
 	}

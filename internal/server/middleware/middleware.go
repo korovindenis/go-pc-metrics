@@ -1,33 +1,41 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
-	"regexp"
+
+	"github.com/gin-gonic/gin"
+	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 )
 
-func CheckMethodAndContentType(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Only POST requests are allowed!", http.StatusMethodNotAllowed)
+func CheckMethodAndContentType() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		namedURL := entity.ReqURI{
+			MetricType: c.Param("metricType"),
+			MetricName: c.Param("metricName"),
+			MetricVal:  c.Param("metricVal"),
+		}
+
+		if c.Request.Method == http.MethodGet {
+			if c.Request.URL.Path == "/" || (namedURL.MetricType != "" && namedURL.MetricName != "") {
+				c.Next()
+				return
+			}
+
+			c.AbortWithError(http.StatusMethodNotAllowed, errors.New("method not allowed"))
 			return
 		}
 
-		// Test was crashed
-		// if contentType := r.Header.Get("content-type"); contentType != "text/plain" {
-		// 	http.Error(w, "Only Content-Type is text/plain!", http.StatusMethodNotAllowed)
-		// 	return
-		// }
+		if c.Request.Method == http.MethodPost {
+			if namedURL.MetricType == "" || namedURL.MetricName == "" || namedURL.MetricVal == "" {
+				c.AbortWithError(http.StatusBadRequest, errors.New("invalid URL format"))
+				return
+			}
 
-		if re := regexp.MustCompile(`/update/[a-zA-Z]+/$`); re.MatchString(r.URL.Path) {
-			http.Error(w, "Not found method!", http.StatusNotFound)
+			c.Next()
 			return
 		}
 
-		if re := regexp.MustCompile(`/update/[a-zA-Z]+/[a-zA-Z]+/[\d.]+[/]{0,}$`); !re.MatchString(r.URL.Path) {
-			http.Error(w, "Invalid URL format!", http.StatusBadRequest)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
+		c.AbortWithError(http.StatusMethodNotAllowed, errors.New("method not allowed"))
+	}
 }

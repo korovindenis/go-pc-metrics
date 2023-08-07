@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Go PC Metrics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Gauge Metrics</h2>
+    <ul>
+        {{ range $key, $value := .Metrics.Gauge }}
+            <li>{{ $key }}: {{ $value }}</li>
+        {{ end }}
+    </ul>
+
+    <h2>Counter Metrics</h2>
+    <ul>
+        {{ range $key, $value := .Metrics.Counter }}
+            <li>{{ $key }}: {{ $value }}</li>
+        {{ end }}
+    </ul>
+</body>
+</html>
