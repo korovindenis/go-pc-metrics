@@ -2,4 +2,4 @@ package entity
 
 import "errors"
 
-var MetricNotFoundErr = errors.New("not set")
+var ErrMetricNotFound = errors.New("not set")

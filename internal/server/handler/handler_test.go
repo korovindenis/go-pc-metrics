@@ -93,7 +93,7 @@ func TestOutputMetric(t *testing.T) {
 	})
 
 	t.Run("GetGauge Metric Not Found", func(t *testing.T) {
-		mockUsecase.On("GetGauge", "InvalidMetric").Return(0.0, entity.MetricNotFoundErr).Once()
+		mockUsecase.On("GetGauge", "InvalidMetric").Return(0.0, entity.ErrMetricNotFound).Once()
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/output/gauge/InvalidMetric", nil)

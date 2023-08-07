@@ -39,7 +39,7 @@ func (s *serverUsecase) GetGauge(gaugeName string) (float64, error) {
 func (s *serverUsecase) SaveCounter(counterName string, counterValue int64) error {
 	// current val + newVal
 	currentCounterValue, err := s.GetCounter(counterName)
-	if err != nil && err != entity.MetricNotFoundErr {
+	if err != nil && err != entity.ErrMetricNotFound {
 		return err
 	}
 

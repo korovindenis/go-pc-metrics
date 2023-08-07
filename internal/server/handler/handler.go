@@ -80,7 +80,7 @@ func (s serverHandler) OutputMetric(c *gin.Context) {
 		// get metric
 		gaugeVal, err := s.srvUsecase.GetGauge(namedURL.MetricName)
 		if err != nil {
-			if err == entity.MetricNotFoundErr {
+			if err == entity.ErrMetricNotFound {
 				c.AbortWithError(http.StatusNotFound, errors.New("metric not found"))
 				return
 			}
@@ -94,7 +94,7 @@ func (s serverHandler) OutputMetric(c *gin.Context) {
 		// get metric
 		counterVal, err := s.srvUsecase.GetCounter(namedURL.MetricName)
 		if err != nil {
-			if err == entity.MetricNotFoundErr {
+			if err == entity.ErrMetricNotFound {
 				c.AbortWithError(http.StatusNotFound, errors.New("metric not found"))
 				return
 			}

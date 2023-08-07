@@ -28,7 +28,7 @@ func CheckMethodAndContentType() gin.HandlerFunc {
 
 		if c.Request.Method == http.MethodPost {
 			if namedURL.MetricType == "" || namedURL.MetricName == "" || namedURL.MetricVal == "" {
-				c.AbortWithError(http.StatusBadRequest, errors.New("invalid URL format"))
+				c.AbortWithError(http.StatusNotFound, errors.New("invalid URL format"))
 				return
 			}
 
