@@ -115,7 +115,7 @@ func TestOutputAllMetrics(t *testing.T) {
 	mockUsecase := new(mockServerUsecase)
 	handler, _ := New(mockUsecase)
 	router := gin.Default()
-	router.LoadHTMLGlob(filepath.Dir(currentDir) + "./templates/*")
+	router.LoadHTMLGlob(filepath.Dir(currentDir) + "/templates/*")
 
 	router.GET("/", handler.OutputAllMetrics)
 
