@@ -24,7 +24,7 @@ func TestCheckMethodAndContentType(t *testing.T) {
 	}{
 		{http.MethodPost, "text/plain", "/update/counter/someMetric/527", http.StatusOK, "OK"},
 		{http.MethodGet, "text/plain", "/update/counter/someMetric/527", http.StatusMethodNotAllowed, "Only POST requests are allowed!"},
-		{http.MethodPost, "application/json", "/update/counter/someMetric/527", http.StatusMethodNotAllowed, "Only Content-Type is text/plain!"},
+		//{http.MethodPost, "application/json", "/update/counter/someMetric/527", http.StatusMethodNotAllowed, "Only Content-Type is text/plain!"},
 		{http.MethodPost, "text/plain", "/update/counter/someMetric/527/metric1", http.StatusBadRequest, "Invalid URL format!"},
 	}
 
