@@ -19,7 +19,7 @@ func Exec(httpAddress string, handler handler.IServerHandler) error {
 
 	// routes
 	router.GET("/", handler.OutputAllMetrics)
-	router.GET("/update/:metricType/:metricName", handler.OutputMetric)
+	router.GET("/value/:metricType/:metricName", handler.OutputMetric)
 	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetrics)
 
 	// start server
