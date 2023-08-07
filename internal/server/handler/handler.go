@@ -89,7 +89,7 @@ func (s serverHandler) OutputMetric(c *gin.Context) {
 		}
 
 		// show metric
-		c.String(http.StatusOK, strconv.FormatFloat(gaugeVal, 'f', 2, 64))
+		c.String(http.StatusOK, strconv.FormatFloat(gaugeVal, 'f', 3, 64))
 	case "counter":
 		// get metric
 		counterVal, err := s.srvUsecase.GetCounter(namedURL.MetricName)
