@@ -18,6 +18,11 @@ func CheckMethodAndContentType(next http.Handler) http.Handler {
 		// 	return
 		// }
 
+		if re := regexp.MustCompile(`/update/[a-zA-Z]+/$`); re.MatchString(r.URL.Path) {
+			http.Error(w, "Not found method!", http.StatusNotFound)
+			return
+		}
+
 		if re := regexp.MustCompile(`/update/[a-zA-Z]+/[a-zA-Z]+/[\d.]+[/]{0,}$`); !re.MatchString(r.URL.Path) {
 			http.Error(w, "Invalid URL format!", http.StatusBadRequest)
 			return
