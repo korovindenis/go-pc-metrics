@@ -19,7 +19,7 @@ func CheckMethodAndContentType(next http.Handler) http.Handler {
 		// }
 
 		if re := regexp.MustCompile(`/update/[a-zA-Z]+/[a-zA-Z]+/[\d.]+[/]{0,}$`); !re.MatchString(r.URL.Path) {
-			http.Error(w, "Invalid URL format!", http.StatusNotFound)
+			http.Error(w, "Invalid URL format!", http.StatusBadRequest)
 			return
 		}
 

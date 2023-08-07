@@ -48,8 +48,9 @@ func Exec(agntUscs agentusecase.IAgentUsecase, logger logger.ILogger, httpAddres
 
 // prepare data
 func sendMetrics(metricsVal any, logger logger.ILogger, httpAddress string) error {
-	switch metricsVal.(type) {
+	switch v := metricsVal.(type) {
 	case entity.GaugeType:
+		_ = v
 		for name, value := range metricsVal.(entity.GaugeType) {
 			if err := httpReq(logger, httpAddress, "gauge", name, strconv.FormatFloat(value, 'f', 2, 64)); err != nil {
 				return err
