@@ -30,7 +30,7 @@ func main() {
 	}
 
 	// run agent
-	if err := agent.Exec(agntUscs, loggerInterface, config.GetHTTPAddress(), config.GetPollInterval(), config.GetReportInterval()); err != nil {
+	if err := agent.Exec(agntUscs, loggerInterface, config.GetHTTPAddressWithScheme(), config.GetPollInterval(), config.GetReportInterval()); err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
