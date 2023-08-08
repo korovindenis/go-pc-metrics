@@ -21,17 +21,20 @@ type flagsAdapter struct {
 }
 
 func New() (IFlags, error) {
+	var reportInterval, pollInterval int
+	var httpAddress string
 	adapter := flagsAdapter{}
 	rootCmd := &cobra.Command{
 		Use:   "go-pc-metrics",
 		Short: "Application",
 	}
-	var reportInterval, pollInterval int
-	rootCmd.Flags().StringVarP(&adapter.httpAddress, "address", "a", "localhost:8080", "HTTP server address")
+
+	rootCmd.Flags().StringVarP(&httpAddress, "address", "a", "localhost:8080", "HTTP server address")
 	rootCmd.Flags().IntVarP(&reportInterval, "report", "r", 10, "Report interval")
 	rootCmd.Flags().IntVarP(&pollInterval, "poll", "p", 2, "Poll interval")
 
-	adapter.reportInterval = time.Duration(reportInterval) * time.Second
+	adapter.httpAddress = httpAddress
+	adapter.pollInterval = time.Duration(pollInterval) * time.Second
 	adapter.pollInterval = time.Duration(pollInterval) * time.Second
 
 	if err := rootCmd.Execute(); err != nil {
