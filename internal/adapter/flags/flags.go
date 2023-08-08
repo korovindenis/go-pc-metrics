@@ -8,7 +8,8 @@ import (
 
 // functions
 type IFlags interface {
-	GetHttpAddress() string
+	GetHTTPAddress() string
+	GetHTTPAddressWithScheme() string
 	GetReportInterval() time.Duration
 	GetPollInterval() time.Duration
 }
@@ -37,8 +38,12 @@ func New() (IFlags, error) {
 	return &adapter, nil
 }
 
-func (f *flagsAdapter) GetHttpAddress() string {
+func (f *flagsAdapter) GetHTTPAddress() string {
 	return f.httpAddress
+}
+
+func (f *flagsAdapter) GetHTTPAddressWithScheme() string {
+	return "http://" + f.httpAddress
 }
 
 func (f *flagsAdapter) GetReportInterval() time.Duration {

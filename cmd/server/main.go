@@ -41,7 +41,7 @@ func main() {
 	}
 
 	// run web server
-	if err := server.Exec(config.GetHttpAddress(), srvHdlrs); err != nil {
+	if err := server.Exec(config.GetHTTPAddress(), srvHdlrs); err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
