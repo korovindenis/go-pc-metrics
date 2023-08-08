@@ -3,20 +3,21 @@ package main
 import (
 	"log"
 	"os"
-	"time"
 
+	"github.com/korovindenis/go-pc-metrics/internal/adapter/flags"
 	"github.com/korovindenis/go-pc-metrics/internal/adapter/logger"
 	agent "github.com/korovindenis/go-pc-metrics/internal/agent/agentapp"
 	agentsecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/agent"
 )
 
-const (
-	pollInterval   = time.Second * 2
-	reportInterval = time.Second * 10
-	httpAddress    = "http://localhost:8080"
-)
-
 func main() {
+	// init flags
+	config, err := flags.New()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+
 	// init logger
 	stndrtLog := log.New(log.Writer(), "", log.Flags())
 	loggerInterface := logger.New(stndrtLog)
@@ -29,7 +30,7 @@ func main() {
 	}
 
 	// run agent
-	if err := agent.Exec(agntUscs, loggerInterface, httpAddress, pollInterval, reportInterval); err != nil {
+	if err := agent.Exec(agntUscs, loggerInterface, config.GetHttpAddress(), config.GetPollInterval(), config.GetReportInterval()); err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
