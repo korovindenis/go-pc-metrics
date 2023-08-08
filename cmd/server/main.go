@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 
@@ -13,11 +14,15 @@ import (
 
 func main() {
 	// init flags
-	config, err := flags.New()
+	_, err := flags.New()
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
+	// init flags for work tests :(
+	var HTTPAddress string
+	flag.StringVar(&HTTPAddress, "a", "localhost:8080", "HTTP server address")
+	flag.Parse()
 
 	// init bd
 	storage, err := storage.New()
@@ -41,7 +46,7 @@ func main() {
 	}
 
 	// run web server
-	if err := server.Exec(config.GetHTTPAddress(), srvHdlrs); err != nil {
+	if err := server.Exec(HTTPAddress, srvHdlrs); err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
