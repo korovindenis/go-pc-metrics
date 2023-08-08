@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/korovindenis/go-pc-metrics/internal/adapter/env"
 	"github.com/korovindenis/go-pc-metrics/internal/adapter/flags"
 	"github.com/korovindenis/go-pc-metrics/internal/adapter/logger"
 	agent "github.com/korovindenis/go-pc-metrics/internal/agent/agentapp"
@@ -11,8 +12,15 @@ import (
 )
 
 func main() {
+	// init env
+	configEnv, err := env.New()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+
 	// init flags
-	config, err := flags.New()
+	config, err := flags.New(configEnv)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
