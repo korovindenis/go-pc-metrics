@@ -26,10 +26,13 @@ func New() (IFlags, error) {
 		Use:   "go-pc-metrics",
 		Short: "Application",
 	}
-
+	var reportInterval, pollInterval int
 	rootCmd.Flags().StringVarP(&adapter.httpAddress, "address", "a", "localhost:8080", "HTTP server address")
-	rootCmd.Flags().DurationVarP(&adapter.reportInterval, "report", "r", 10*time.Second, "Report interval")
-	rootCmd.Flags().DurationVarP(&adapter.pollInterval, "poll", "p", 2*time.Second, "Poll interval")
+	rootCmd.Flags().IntVarP(&reportInterval, "report", "r", 10, "Report interval")
+	rootCmd.Flags().IntVarP(&pollInterval, "poll", "p", 2, "Poll interval")
+
+	adapter.reportInterval = time.Duration(reportInterval) * time.Second
+	adapter.pollInterval = time.Duration(pollInterval) * time.Second
 
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err

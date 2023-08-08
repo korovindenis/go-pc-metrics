@@ -1,10 +1,8 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"os"
-	"time"
 
 	"github.com/korovindenis/go-pc-metrics/internal/adapter/flags"
 	"github.com/korovindenis/go-pc-metrics/internal/adapter/logger"
@@ -14,20 +12,11 @@ import (
 
 func main() {
 	// init flags
-	_, err := flags.New()
+	config, err := flags.New()
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
-
-	// init flags for work tests :(
-	var HTTPAddress string
-	var reportInterval time.Duration
-	var pollInterval time.Duration
-	flag.StringVar(&HTTPAddress, "a", "localhost:8080", "HTTP server address")
-	flag.DurationVar(&reportInterval, "r", 10*time.Second, "Report interval")
-	flag.DurationVar(&pollInterval, "p", 2*time.Second, "Poll interval")
-	flag.Parse()
 
 	// init logger
 	stndrtLog := log.New(log.Writer(), "", log.Flags())
@@ -41,7 +30,7 @@ func main() {
 	}
 
 	// run agent
-	if err := agent.Exec(agntUscs, loggerInterface, "http://"+HTTPAddress, reportInterval, pollInterval); err != nil {
+	if err := agent.Exec(agntUscs, loggerInterface, config.GetHTTPAddress(), config.GetPollInterval(), config.GetReportInterval()); err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
