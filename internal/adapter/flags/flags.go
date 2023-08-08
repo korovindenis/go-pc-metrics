@@ -16,26 +16,20 @@ type IFlags interface {
 
 type flagsAdapter struct {
 	httpAddress    string
-	reportInterval time.Duration
-	pollInterval   time.Duration
+	reportInterval int
+	pollInterval   int
 }
 
 func New() (IFlags, error) {
-	var reportInterval, pollInterval int
-	var httpAddress string
 	adapter := flagsAdapter{}
 	rootCmd := &cobra.Command{
 		Use:   "go-pc-metrics",
 		Short: "Application",
 	}
 
-	rootCmd.Flags().StringVarP(&httpAddress, "address", "a", "localhost:8080", "HTTP server address")
-	rootCmd.Flags().IntVarP(&reportInterval, "report", "r", 10, "Report interval")
-	rootCmd.Flags().IntVarP(&pollInterval, "poll", "p", 2, "Poll interval")
-
-	adapter.httpAddress = httpAddress
-	adapter.reportInterval = time.Duration(reportInterval) * time.Second
-	adapter.pollInterval = time.Duration(pollInterval) * time.Second
+	rootCmd.Flags().StringVarP(&adapter.httpAddress, "address", "a", "localhost:8080", "HTTP server address")
+	rootCmd.Flags().IntVarP(&adapter.reportInterval, "report", "r", 10, "Report interval")
+	rootCmd.Flags().IntVarP(&adapter.pollInterval, "poll", "p", 2, "Poll interval")
 
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
@@ -53,9 +47,9 @@ func (f *flagsAdapter) GetHTTPAddressWithScheme() string {
 }
 
 func (f *flagsAdapter) GetReportInterval() time.Duration {
-	return f.reportInterval
+	return time.Duration(f.reportInterval) * time.Second
 }
 
 func (f *flagsAdapter) GetPollInterval() time.Duration {
-	return f.pollInterval
+	return time.Duration(f.pollInterval) * time.Second
 }
