@@ -1,9 +1,8 @@
 package flags
 
 import (
+	"flag"
 	"time"
-
-	"github.com/spf13/cobra"
 )
 
 // functions
@@ -22,18 +21,24 @@ type flagsAdapter struct {
 
 func New() (IFlags, error) {
 	adapter := flagsAdapter{}
-	rootCmd := &cobra.Command{
-		Use:   "go-pc-metrics",
-		Short: "Application",
-	}
+	// rootCmd := &cobra.Command{
+	// 	Use:   "go-pc-metrics",
+	// 	Short: "Application",
+	// }
 
-	rootCmd.Flags().StringVarP(&adapter.httpAddress, "address", "a", "localhost:8080", "HTTP server address")
-	rootCmd.Flags().DurationVarP(&adapter.reportInterval, "report", "r", 10*time.Second, "Report interval")
-	rootCmd.Flags().DurationVarP(&adapter.pollInterval, "poll", "p", 2*time.Second, "Poll interval")
+	// rootCmd.Flags().StringVarP(&adapter.httpAddress, "address", "a", "localhost:8080", "HTTP server address")
+	// rootCmd.Flags().DurationVarP(&adapter.reportInterval, "report", "r", 10*time.Second, "Report interval")
+	// rootCmd.Flags().DurationVarP(&adapter.pollInterval, "poll", "p", 2*time.Second, "Poll interval")
 
-	if err := rootCmd.Execute(); err != nil {
-		return nil, err
-	}
+	// if err := rootCmd.Execute(); err != nil {
+	// 	return nil, err
+	// }
+
+	flag.StringVar(&adapter.httpAddress, "a", "localhost:8080", "HTTP server address")
+	flag.DurationVar(&adapter.reportInterval, "r", 10*time.Second, "Report interval")
+	flag.DurationVar(&adapter.pollInterval, "p", 2*time.Second, "Poll interval")
+
+	flag.Parse()
 
 	return &adapter, nil
 }
