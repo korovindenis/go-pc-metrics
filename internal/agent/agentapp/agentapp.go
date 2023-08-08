@@ -52,7 +52,7 @@ func sendMetrics(metricsVal any, logger logger.ILogger, httpAddress string) erro
 	case entity.GaugeType:
 		_ = v
 		for name, value := range metricsVal.(entity.GaugeType) {
-			if err := httpReq(logger, httpAddress, "gauge", name, strconv.FormatFloat(value, 'f', 3, 64)); err != nil {
+			if err := httpReq(logger, httpAddress, "gauge", name, strconv.FormatFloat(value, 'g', -1, 64)); err != nil {
 				return err
 			}
 		}
