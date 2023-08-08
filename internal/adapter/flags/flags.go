@@ -34,7 +34,7 @@ func New() (IFlags, error) {
 	rootCmd.Flags().IntVarP(&pollInterval, "poll", "p", 2, "Poll interval")
 
 	adapter.httpAddress = httpAddress
-	adapter.pollInterval = time.Duration(pollInterval) * time.Second
+	adapter.reportInterval = time.Duration(reportInterval) * time.Second
 	adapter.pollInterval = time.Duration(pollInterval) * time.Second
 
 	if err := rootCmd.Execute(); err != nil {
