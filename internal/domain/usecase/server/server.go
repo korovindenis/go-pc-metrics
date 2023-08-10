@@ -3,7 +3,7 @@ package serverusecase
 import "github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 
 // storage functions
-type IStorage interface {
+type Storage interface {
 	SaveGauge(gaugeName string, gaugeValue float64) error
 	GetGauge(gaugeName string) (float64, error)
 
@@ -14,29 +14,29 @@ type IStorage interface {
 }
 
 // server functions
-type IServerUsecase interface {
-	IStorage
+type ServerUsecase interface {
+	Storage
 }
 
-type serverUsecase struct {
-	storage IStorage
+type Server struct {
+	storage Storage
 }
 
-func New(storage IStorage) (IServerUsecase, error) {
-	return &serverUsecase{
+func New(storage Storage) (*Server, error) {
+	return &Server{
 		storage: storage,
 	}, nil
 }
 
-func (s *serverUsecase) SaveGauge(gaugeName string, gaugeValue float64) error {
+func (s *Server) SaveGauge(gaugeName string, gaugeValue float64) error {
 	return s.storage.SaveGauge(gaugeName, gaugeValue)
 }
 
-func (s *serverUsecase) GetGauge(gaugeName string) (float64, error) {
+func (s *Server) GetGauge(gaugeName string) (float64, error) {
 	return s.storage.GetGauge(gaugeName)
 }
 
-func (s *serverUsecase) SaveCounter(counterName string, counterValue int64) error {
+func (s *Server) SaveCounter(counterName string, counterValue int64) error {
 	// current val + newVal
 	currentCounterValue, err := s.GetCounter(counterName)
 	if err != nil && err != entity.ErrMetricNotFound {
@@ -46,10 +46,10 @@ func (s *serverUsecase) SaveCounter(counterName string, counterValue int64) erro
 	return s.storage.SaveCounter(counterName, counterValue+currentCounterValue)
 }
 
-func (s *serverUsecase) GetCounter(counterName string) (int64, error) {
+func (s *Server) GetCounter(counterName string) (int64, error) {
 	return s.storage.GetCounter(counterName)
 }
 
-func (s *serverUsecase) GetAllData() (entity.MetricsType, error) {
+func (s *Server) GetAllData() (entity.MetricsType, error) {
 	return s.storage.GetAllData()
 }

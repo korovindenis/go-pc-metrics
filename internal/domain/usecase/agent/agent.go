@@ -8,7 +8,7 @@ import (
 )
 
 // agent functions
-type IAgentUsecase interface {
+type AgentUsecase interface {
 	GetGauge() (entity.GaugeType, error)
 	GetCounter() (entity.CounterType, error)
 
@@ -16,67 +16,67 @@ type IAgentUsecase interface {
 	UpdateCounter() error
 }
 
-type agentUsecase struct {
-	Rtm     runtime.MemStats
-	Metrics entity.MetricsType
+type Agent struct {
+	rtm     runtime.MemStats
+	metrics entity.MetricsType
 }
 
-func New() (IAgentUsecase, error) {
-	agntUscs := &agentUsecase{
-		Metrics: entity.MetricsType{
+func New() (*Agent, error) {
+	agntUscs := &Agent{
+		metrics: entity.MetricsType{
 			Gauge:   make(map[string]float64, 30),
 			Counter: make(map[string]int64, 1),
 		},
 	}
-	runtime.ReadMemStats(&agntUscs.Rtm)
+	runtime.ReadMemStats(&agntUscs.rtm)
 
 	return agntUscs, nil
 }
 
-func (a *agentUsecase) UpdateCounter() error {
-	a.Metrics.Counter["PollCount"] += 1
+func (a *Agent) UpdateCounter() error {
+	a.metrics.Counter["PollCount"] += 1
 
 	return nil
 }
 
-func (a *agentUsecase) UpdateGauge() error {
+func (a *Agent) UpdateGauge() error {
 
-	a.Metrics.Gauge = entity.GaugeType{
-		"Alloc":         float64(a.Rtm.Alloc),
-		"BuckHashSys":   float64(a.Rtm.BuckHashSys),
-		"Frees":         float64(a.Rtm.Frees),
-		"GCCPUFraction": a.Rtm.GCCPUFraction,
-		"GCSys":         float64(a.Rtm.GCSys),
-		"HeapAlloc":     float64(a.Rtm.HeapAlloc),
-		"HeapIdle":      float64(a.Rtm.HeapIdle),
-		"HeapInuse":     float64(a.Rtm.HeapInuse),
-		"HeapObjects":   float64(a.Rtm.HeapObjects),
-		"HeapReleased":  float64(a.Rtm.HeapReleased),
-		"HeapSys":       float64(a.Rtm.HeapSys),
-		"LastGC":        float64(a.Rtm.LastGC),
-		"Lookups":       float64(a.Rtm.Lookups),
-		"MCacheSys":     float64(a.Rtm.MCacheSys),
-		"MSpanInuse":    float64(a.Rtm.MSpanInuse),
-		"MSpanSys":      float64(a.Rtm.MSpanSys),
-		"Mallocs":       float64(a.Rtm.Mallocs),
-		"NextGC":        float64(a.Rtm.NextGC),
-		"NumForcedGC":   float64(a.Rtm.NumForcedGC),
-		"NumGC":         float64(a.Rtm.NumGC),
-		"OtherSys":      float64(a.Rtm.OtherSys),
-		"PauseTotalNs":  float64(a.Rtm.PauseTotalNs),
-		"StackInuse":    float64(a.Rtm.StackInuse),
-		"StackSys":      float64(a.Rtm.StackSys),
-		"Sys":           float64(a.Rtm.Sys),
-		"TotalAlloc":    float64(a.Rtm.TotalAlloc),
+	a.metrics.Gauge = entity.GaugeType{
+		"Alloc":         float64(a.rtm.Alloc),
+		"BuckHashSys":   float64(a.rtm.BuckHashSys),
+		"Frees":         float64(a.rtm.Frees),
+		"GCCPUFraction": a.rtm.GCCPUFraction,
+		"GCSys":         float64(a.rtm.GCSys),
+		"HeapAlloc":     float64(a.rtm.HeapAlloc),
+		"HeapIdle":      float64(a.rtm.HeapIdle),
+		"HeapInuse":     float64(a.rtm.HeapInuse),
+		"HeapObjects":   float64(a.rtm.HeapObjects),
+		"HeapReleased":  float64(a.rtm.HeapReleased),
+		"HeapSys":       float64(a.rtm.HeapSys),
+		"LastGC":        float64(a.rtm.LastGC),
+		"Lookups":       float64(a.rtm.Lookups),
+		"MCacheSys":     float64(a.rtm.MCacheSys),
+		"MSpanInuse":    float64(a.rtm.MSpanInuse),
+		"MSpanSys":      float64(a.rtm.MSpanSys),
+		"Mallocs":       float64(a.rtm.Mallocs),
+		"NextGC":        float64(a.rtm.NextGC),
+		"NumForcedGC":   float64(a.rtm.NumForcedGC),
+		"NumGC":         float64(a.rtm.NumGC),
+		"OtherSys":      float64(a.rtm.OtherSys),
+		"PauseTotalNs":  float64(a.rtm.PauseTotalNs),
+		"StackInuse":    float64(a.rtm.StackInuse),
+		"StackSys":      float64(a.rtm.StackSys),
+		"Sys":           float64(a.rtm.Sys),
+		"TotalAlloc":    float64(a.rtm.TotalAlloc),
 		"RandomValue":   rand.Float64(),
 	}
 
 	return nil
 }
 
-func (a *agentUsecase) GetGauge() (entity.GaugeType, error) {
-	return a.Metrics.Gauge, nil
+func (a *Agent) GetGauge() (entity.GaugeType, error) {
+	return a.metrics.Gauge, nil
 }
-func (a *agentUsecase) GetCounter() (entity.CounterType, error) {
-	return a.Metrics.Counter, nil
+func (a *Agent) GetCounter() (entity.CounterType, error) {
+	return a.metrics.Counter, nil
 }

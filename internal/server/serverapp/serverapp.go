@@ -7,14 +7,14 @@ import (
 )
 
 // server main
-func Exec(httpAddress string, handler handler.IServerHandler) error {
+func Exec(httpAddress string, handler handler.ServerHandler) error {
 	router := gin.Default()
 
 	// html template
 	router.LoadHTMLGlob("./internal/server/templates/*.html")
 
 	// middleware
-	router.Use(middleware.CheckMethodAndContentType())
+	router.Use(middleware.CheckMethod())
 	router.Use(gin.Recovery())
 
 	// routes

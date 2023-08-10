@@ -2,18 +2,18 @@ package logger
 
 import "log"
 
-type ILogger interface {
+type Logger interface {
 	Println(v ...interface{})
 }
 
-type logAdapter struct {
+type LogAdapter struct {
 	logger *log.Logger
 }
 
-func New(logger *log.Logger) *logAdapter {
-	return &logAdapter{logger: logger}
+func New(logger *log.Logger) *LogAdapter {
+	return &LogAdapter{logger: logger}
 }
 
-func (l *logAdapter) Println(v ...interface{}) {
+func (l *LogAdapter) Println(v ...interface{}) {
 	l.logger.Println(v...)
 }

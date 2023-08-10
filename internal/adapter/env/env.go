@@ -6,19 +6,18 @@ import (
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 )
 
-// functions
-type IEnv interface {
+type Env interface {
 	GetEnvVariable(varName string) (string, error)
 }
 
-type envAdapter struct {
+type EnvAdapter struct {
 }
 
-func New() (IEnv, error) {
-	return &envAdapter{}, nil
+func New() (*EnvAdapter, error) {
+	return &EnvAdapter{}, nil
 }
 
-func (e *envAdapter) GetEnvVariable(varName string) (string, error) {
+func (e *EnvAdapter) GetEnvVariable(varName string) (string, error) {
 	if envVarValue, exists := os.LookupEnv(varName); exists {
 		return envVarValue, nil
 	}

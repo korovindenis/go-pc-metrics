@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
@@ -10,39 +11,39 @@ import (
 )
 
 // functions
-type IFlags interface {
+type Flags interface {
 	GetHTTPAddress() string
 	GetHTTPAddressWithScheme() string
 	GetReportInterval() time.Duration
 	GetPollInterval() time.Duration
 }
 
-type flagsAdapter struct {
+type FlagsAdapter struct {
 	httpAddress    string
 	reportInterval int
 	pollInterval   int
 }
 
-func New(envObj env.IEnv) (IFlags, error) {
-	adapter := flagsAdapter{}
+func New(envObj env.Env) (*FlagsAdapter, error) {
+	adapter := FlagsAdapter{}
 	rootCmd := &cobra.Command{
 		Use:   "go-pc-metrics",
 		Short: "Application",
 	}
 
-	if envHTTPAddress, err := envObj.GetEnvVariable("ADDRESS"); envHTTPAddress == "" || err == entity.ErrEnvVarNotFound {
+	if envHTTPAddress, err := envObj.GetEnvVariable("ADDRESS"); envHTTPAddress == "" || errors.Is(err, entity.ErrEnvVarNotFound) {
 		rootCmd.Flags().StringVarP(&adapter.httpAddress, "address", "a", "localhost:8080", "HTTP server address")
 	} else {
 		adapter.httpAddress = envHTTPAddress
 	}
 
-	if reportInterval, err := envObj.GetEnvVariable("REPORT_INTERVAL"); reportInterval == "" || err == entity.ErrEnvVarNotFound {
+	if reportInterval, err := envObj.GetEnvVariable("REPORT_INTERVAL"); reportInterval == "" || errors.Is(err, entity.ErrEnvVarNotFound) {
 		rootCmd.Flags().IntVarP(&adapter.reportInterval, "report", "r", 10, "Report interval")
 	} else {
 		adapter.reportInterval, _ = strconv.Atoi(reportInterval)
 	}
 
-	if pollInterval, err := envObj.GetEnvVariable("POLL_INTERVAL"); pollInterval == "" || err == entity.ErrEnvVarNotFound {
+	if pollInterval, err := envObj.GetEnvVariable("POLL_INTERVAL"); pollInterval == "" || errors.Is(err, entity.ErrEnvVarNotFound) {
 		rootCmd.Flags().IntVarP(&adapter.pollInterval, "poll", "p", 2, "Poll interval")
 	} else {
 		adapter.pollInterval, _ = strconv.Atoi(pollInterval)
@@ -55,18 +56,18 @@ func New(envObj env.IEnv) (IFlags, error) {
 	return &adapter, nil
 }
 
-func (f *flagsAdapter) GetHTTPAddress() string {
+func (f *FlagsAdapter) GetHTTPAddress() string {
 	return f.httpAddress
 }
 
-func (f *flagsAdapter) GetHTTPAddressWithScheme() string {
+func (f *FlagsAdapter) GetHTTPAddressWithScheme() string {
 	return "http://" + f.httpAddress
 }
 
-func (f *flagsAdapter) GetReportInterval() time.Duration {
+func (f *FlagsAdapter) GetReportInterval() time.Duration {
 	return time.Duration(f.reportInterval) * time.Second
 }
 
-func (f *flagsAdapter) GetPollInterval() time.Duration {
+func (f *FlagsAdapter) GetPollInterval() time.Duration {
 	return time.Duration(f.pollInterval) * time.Second
 }

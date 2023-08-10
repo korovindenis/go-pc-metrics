@@ -14,7 +14,7 @@ import (
 )
 
 // agent main
-func Exec(agntUscs agentusecase.IAgentUsecase, logger logger.ILogger, httpAddress string, pollInterval, reportInterval time.Duration) error {
+func Exec(agntUscs agentusecase.AgentUsecase, logger logger.Logger, httpAddress string, pollInterval, reportInterval time.Duration) error {
 
 	for mainTime := reportInterval; ; mainTime -= pollInterval {
 		// every 2 sec.
@@ -47,7 +47,7 @@ func Exec(agntUscs agentusecase.IAgentUsecase, logger logger.ILogger, httpAddres
 }
 
 // prepare data
-func sendMetrics(metricsVal any, logger logger.ILogger, httpAddress string) error {
+func sendMetrics(metricsVal any, logger logger.Logger, httpAddress string) error {
 	switch v := metricsVal.(type) {
 	case entity.GaugeType:
 		_ = v
@@ -70,7 +70,7 @@ func sendMetrics(metricsVal any, logger logger.ILogger, httpAddress string) erro
 }
 
 // send data
-func httpReq(logger logger.ILogger, httpAddress, metricType, metricName, metricVal string) error {
+func httpReq(logger logger.Logger, httpAddress, metricType, metricName, metricVal string) error {
 	uri := fmt.Sprintf("%s/update/%s/%s/%s", httpAddress, metricType, metricName, metricVal)
 	logger.Println(uri)
 
