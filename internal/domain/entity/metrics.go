@@ -8,7 +8,7 @@ type MetricsType struct {
 	Counter CounterType
 }
 
-type ReqURI struct {
+type MetricsURI struct {
 	MetricType string
 	MetricName string
 	MetricVal  string

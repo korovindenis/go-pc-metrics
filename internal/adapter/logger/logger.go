@@ -1,17 +1,15 @@
 package logger
 
-import "log"
-
-type Logger interface {
+type logger interface {
 	Println(v ...interface{})
 }
 
 type LogAdapter struct {
-	logger *log.Logger
+	logger logger
 }
 
-func New(logger *log.Logger) *LogAdapter {
-	return &LogAdapter{logger: logger}
+func New(l logger) *LogAdapter {
+	return &LogAdapter{logger: l}
 }
 
 func (l *LogAdapter) Println(v ...interface{}) {

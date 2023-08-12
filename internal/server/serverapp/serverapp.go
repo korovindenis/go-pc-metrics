@@ -2,12 +2,24 @@ package serverapp
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/korovindenis/go-pc-metrics/internal/server/handler"
 	"github.com/korovindenis/go-pc-metrics/internal/server/middleware"
 )
 
+// function handler
+type serverHandler interface {
+	ReceptionMetrics(c *gin.Context)
+	OutputMetric(c *gin.Context)
+	OutputAllMetrics(c *gin.Context)
+}
+
+// config functions
+type config interface {
+	GetHTTPAddress() string
+}
+
 // server main
-func Exec(httpAddress string, handler handler.ServerHandler) error {
+func Exec(cfg config, handler serverHandler) error {
+	httpAddress := cfg.GetHTTPAddress()
 	router := gin.Default()
 
 	// html template

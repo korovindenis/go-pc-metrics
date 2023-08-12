@@ -7,28 +7,32 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
-	usecaseServer "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/server"
 )
 
-type ServerHandler interface {
-	ReceptionMetrics(c *gin.Context)
-	OutputAllMetrics(c *gin.Context)
-	OutputMetric(c *gin.Context)
+// function usecase
+type usecase interface {
+	SaveGaugeUsecase(gaugeName string, gaugeValue float64) error
+	GetGaugeUsecase(gaugeName string) (float64, error)
+
+	SaveCounterUsecase(counterName string, counterValue int64) error
+	GetCounterUsecase(counterName string) (int64, error)
+
+	GetAllDataUsecase() (entity.MetricsType, error)
 }
 
 type Handler struct {
-	srvUsecase usecaseServer.ServerUsecase
+	srvUsecase usecase
 }
 
-func New(usecase usecaseServer.ServerUsecase) (*Handler, error) {
+func New(u usecase) (*Handler, error) {
 	return &Handler{
-		srvUsecase: usecase,
+		srvUsecase: u,
 	}, nil
 }
 
-func (s Handler) ReceptionMetrics(c *gin.Context) {
+func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	// get metric from url
-	namedURL := entity.ReqURI{
+	namedURL := entity.MetricsURI{
 		MetricType: c.Param("metricType"),
 		MetricName: c.Param("metricName"),
 		MetricVal:  c.Param("metricVal"),
@@ -51,7 +55,7 @@ func (s Handler) ReceptionMetrics(c *gin.Context) {
 		}
 
 		// save metric
-		if err = s.srvUsecase.SaveGauge(namedURL.MetricName, metricVal); err != nil {
+		if err = s.srvUsecase.SaveGaugeUsecase(namedURL.MetricName, metricVal); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
@@ -64,7 +68,7 @@ func (s Handler) ReceptionMetrics(c *gin.Context) {
 		}
 
 		// save metric
-		if err = s.srvUsecase.SaveCounter(namedURL.MetricName, metricVal); err != nil {
+		if err = s.srvUsecase.SaveCounterUsecase(namedURL.MetricName, metricVal); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
@@ -76,9 +80,9 @@ func (s Handler) ReceptionMetrics(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func (s Handler) OutputMetric(c *gin.Context) {
+func (s *Handler) OutputMetric(c *gin.Context) {
 	// get metric from url
-	namedURL := entity.ReqURI{
+	namedURL := entity.MetricsURI{
 		MetricType: c.Param("metricType"),
 		MetricName: c.Param("metricName"),
 	}
@@ -92,7 +96,7 @@ func (s Handler) OutputMetric(c *gin.Context) {
 	switch namedURL.MetricType {
 	case "gauge":
 		// get metric
-		gaugeVal, err := s.srvUsecase.GetGauge(namedURL.MetricName)
+		gaugeVal, err := s.srvUsecase.GetGaugeUsecase(namedURL.MetricName)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
@@ -106,7 +110,7 @@ func (s Handler) OutputMetric(c *gin.Context) {
 		c.String(http.StatusOK, strconv.FormatFloat(gaugeVal, 'g', -1, 64))
 	case "counter":
 		// get metric
-		counterVal, err := s.srvUsecase.GetCounter(namedURL.MetricName)
+		counterVal, err := s.srvUsecase.GetCounterUsecase(namedURL.MetricName)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
@@ -125,8 +129,8 @@ func (s Handler) OutputMetric(c *gin.Context) {
 
 }
 
-func (s Handler) OutputAllMetrics(c *gin.Context) {
-	data, err := s.srvUsecase.GetAllData()
+func (s *Handler) OutputAllMetrics(c *gin.Context) {
+	data, err := s.srvUsecase.GetAllDataUsecase()
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return

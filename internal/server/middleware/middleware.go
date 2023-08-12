@@ -12,6 +12,7 @@ func CheckMethod() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method != http.MethodPost && c.Request.Method != http.MethodGet {
 			c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
+			return
 		}
 		c.Next()
 	}

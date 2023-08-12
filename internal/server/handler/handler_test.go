@@ -18,27 +18,27 @@ type mockServerUsecase struct {
 	mock.Mock
 }
 
-func (m *mockServerUsecase) SaveGauge(gaugeName string, gaugeValue float64) error {
+func (m *mockServerUsecase) SaveGaugeUsecase(gaugeName string, gaugeValue float64) error {
 	args := m.Called(gaugeName, gaugeValue)
 	return args.Error(0)
 }
 
-func (m *mockServerUsecase) SaveCounter(counterName string, counterValue int64) error {
+func (m *mockServerUsecase) SaveCounterUsecase(counterName string, counterValue int64) error {
 	args := m.Called(counterName, counterValue)
 	return args.Error(0)
 }
 
-func (m *mockServerUsecase) GetGauge(gaugeName string) (float64, error) {
+func (m *mockServerUsecase) GetGaugeUsecase(gaugeName string) (float64, error) {
 	args := m.Called(gaugeName)
 	return args.Get(0).(float64), args.Error(1)
 }
 
-func (m *mockServerUsecase) GetCounter(counterName string) (int64, error) {
+func (m *mockServerUsecase) GetCounterUsecase(counterName string) (int64, error) {
 	args := m.Called(counterName)
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (m *mockServerUsecase) GetAllData() (entity.MetricsType, error) {
+func (m *mockServerUsecase) GetAllDataUsecase() (entity.MetricsType, error) {
 	args := m.Called()
 	return args.Get(0).(entity.MetricsType), args.Error(1)
 }
@@ -51,7 +51,7 @@ func TestReceptionMetrics(t *testing.T) {
 	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetrics)
 
 	t.Run("SaveGauge Success", func(t *testing.T) {
-		mockUsecase.On("SaveGauge", "OtherSys", 471728.0).Return(nil).Once()
+		mockUsecase.On("SaveGaugeUsecase", "OtherSys", 471728.0).Return(nil).Once()
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/update/gauge/OtherSys/471728", nil)
@@ -67,7 +67,7 @@ func TestReceptionMetrics(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		mockUsecase.AssertNotCalled(t, "SaveGauge")
+		mockUsecase.AssertNotCalled(t, "SaveGaugeUsecase")
 	})
 
 	mockUsecase.AssertExpectations(t)
@@ -81,7 +81,7 @@ func TestOutputMetric(t *testing.T) {
 	router.GET("/output/:metricType/:metricName", handler.OutputMetric)
 
 	t.Run("GetGauge Success", func(t *testing.T) {
-		mockUsecase.On("GetGauge", "OtherSys").Return(471728.0, nil).Once()
+		mockUsecase.On("GetGaugeUsecase", "OtherSys").Return(471728.0, nil).Once()
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/output/gauge/OtherSys", nil)
@@ -93,7 +93,7 @@ func TestOutputMetric(t *testing.T) {
 	})
 
 	t.Run("GetGauge Metric Not Found", func(t *testing.T) {
-		mockUsecase.On("GetGauge", "InvalidMetric").Return(0.0, entity.ErrMetricNotFound).Once()
+		mockUsecase.On("GetGaugeUsecase", "InvalidMetric").Return(0.0, entity.ErrMetricNotFound).Once()
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/output/gauge/InvalidMetric", nil)
@@ -130,7 +130,7 @@ func TestOutputAllMetrics(t *testing.T) {
 				"Counter2": 200,
 			},
 		}
-		mockUsecase.On("GetAllData").Return(mockMetrics, nil).Once()
+		mockUsecase.On("GetAllDataUsecase").Return(mockMetrics, nil).Once()
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/", nil)

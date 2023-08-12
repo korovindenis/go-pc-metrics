@@ -4,43 +4,40 @@ import (
 	"log"
 	"os"
 
-	"github.com/korovindenis/go-pc-metrics/internal/adapter/env"
-	"github.com/korovindenis/go-pc-metrics/internal/adapter/flags"
+	"github.com/korovindenis/go-pc-metrics/internal/adapter/config"
 	"github.com/korovindenis/go-pc-metrics/internal/adapter/logger"
 	agent "github.com/korovindenis/go-pc-metrics/internal/agent/agentapp"
-	agentsecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/agent"
+	agentUsecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/agent"
+)
+
+const (
+	EXIT_SUCCES     = 0
+	EXIT_WITH_ERROR = 1
 )
 
 func main() {
-	// init env
-	configEnv, err := env.New()
+	// init config (flags and env)
+	cfg, err := config.New()
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
-	}
-
-	// init flags
-	config, err := flags.New(configEnv)
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
+		os.Exit(EXIT_WITH_ERROR)
 	}
 
 	// init logger
-	stndrtLog := log.New(log.Writer(), "", log.Flags())
-	loggerInterface := logger.New(stndrtLog)
+	stdLog := log.New(log.Writer(), "", log.Flags())
+	log := logger.New(stdLog)
 
 	// init usecases
-	agntUscs, err := agentsecase.New()
+	agentUsecase, err := agentUsecase.New()
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
+		os.Exit(EXIT_WITH_ERROR)
 	}
 
 	// run agent
-	if err := agent.Exec(agntUscs, loggerInterface, config.GetHTTPAddressWithScheme(), config.GetPollInterval(), config.GetReportInterval()); err != nil {
+	if err := agent.Exec(agentUsecase, log, cfg); err != nil {
 		log.Println(err)
-		os.Exit(1)
+		os.Exit(EXIT_WITH_ERROR)
 	}
-	os.Exit(0)
+	os.Exit(EXIT_SUCCES)
 }

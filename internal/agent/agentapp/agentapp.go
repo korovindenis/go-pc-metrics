@@ -8,35 +8,64 @@ import (
 	"strings"
 	"time"
 
-	"github.com/korovindenis/go-pc-metrics/internal/adapter/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
-	agentusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/agent"
 )
 
+// agent functions
+type agentUsecase interface {
+	GetGauge() (entity.GaugeType, error)
+	GetCounter() (entity.CounterType, error)
+
+	UpdateGauge() error
+	UpdateCounter() error
+}
+
+// logger functions
+type logger interface {
+	Println(v ...interface{})
+}
+
+// config functions
+type config interface {
+	GetHTTPAddressWithScheme() string
+	GetPollInterval() time.Duration
+	GetReportInterval() time.Duration
+}
+
 // agent main
-func Exec(agntUscs agentusecase.AgentUsecase, logger logger.Logger, httpAddress string, pollInterval, reportInterval time.Duration) error {
+func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
+	httpAddress := cfg.GetHTTPAddressWithScheme()
+	reportInterval := cfg.GetReportInterval()
+	pollInterval := cfg.GetPollInterval()
 
 	for mainTime := reportInterval; ; mainTime -= pollInterval {
 		// every 2 sec.
-		logger.Println("update metrics")
-		if err := agntUscs.UpdateGauge(); err != nil {
+		log.Println("update metrics")
+		if err := agentUsecase.UpdateGauge(); err != nil {
 			return err
 		}
-		if err := agntUscs.UpdateCounter(); err != nil {
+		if err := agentUsecase.UpdateCounter(); err != nil {
 			return err
 		}
 
 		// every 10 sec.
 		if mainTime <= 0 {
-			logger.Println("send metrics")
-			// TODO err
-			gaugeVal, _ := agntUscs.GetGauge()
-			if err := sendMetrics(gaugeVal, logger, httpAddress); err != nil {
+			log.Println("send metrics")
+			gaugeVal, err := agentUsecase.GetGauge()
+			if err != nil {
 				return err
 			}
-			// TODO err
-			counterVal, _ := agntUscs.GetCounter()
-			if err := sendMetrics(counterVal, logger, httpAddress); err != nil {
+			err = sendMetrics(gaugeVal, log, httpAddress)
+			if err != nil {
+				return err
+			}
+
+			counterVal, err := agentUsecase.GetCounter()
+			if err != nil {
+				return err
+			}
+			err = sendMetrics(counterVal, log, httpAddress)
+			if err != nil {
 				return err
 			}
 			mainTime = reportInterval
@@ -47,18 +76,18 @@ func Exec(agntUscs agentusecase.AgentUsecase, logger logger.Logger, httpAddress 
 }
 
 // prepare data
-func sendMetrics(metricsVal any, logger logger.Logger, httpAddress string) error {
+func sendMetrics(metricsVal any, log logger, httpAddress string) error {
 	switch v := metricsVal.(type) {
 	case entity.GaugeType:
 		_ = v
 		for name, value := range metricsVal.(entity.GaugeType) {
-			if err := httpReq(logger, httpAddress, "gauge", name, strconv.FormatFloat(value, 'g', -1, 64)); err != nil {
+			if err := httpReq(log, httpAddress, "gauge", name, strconv.FormatFloat(value, 'g', -1, 64)); err != nil {
 				return err
 			}
 		}
 	case entity.CounterType:
 		for name, value := range metricsVal.(entity.CounterType) {
-			if err := httpReq(logger, httpAddress, "counter", name, strconv.FormatInt(value, 10)); err != nil {
+			if err := httpReq(log, httpAddress, "counter", name, strconv.FormatInt(value, 10)); err != nil {
 				return err
 			}
 		}
@@ -70,9 +99,9 @@ func sendMetrics(metricsVal any, logger logger.Logger, httpAddress string) error
 }
 
 // send data
-func httpReq(logger logger.Logger, httpAddress, metricType, metricName, metricVal string) error {
+func httpReq(log logger, httpAddress, metricType, metricName, metricVal string) error {
 	uri := fmt.Sprintf("%s/update/%s/%s/%s", httpAddress, metricType, metricName, metricVal)
-	logger.Println(uri)
+	log.Println(uri)
 
 	// HTTP POST request
 	req, err := http.NewRequest(http.MethodPost, uri, strings.NewReader(""))

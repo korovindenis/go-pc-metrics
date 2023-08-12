@@ -7,30 +7,21 @@ import (
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 )
 
-// agent functions
-type AgentUsecase interface {
-	GetGauge() (entity.GaugeType, error)
-	GetCounter() (entity.CounterType, error)
-
-	UpdateGauge() error
-	UpdateCounter() error
-}
-
 type Agent struct {
 	rtm     runtime.MemStats
 	metrics entity.MetricsType
 }
 
 func New() (*Agent, error) {
-	agntUscs := &Agent{
+	agentUsecase := &Agent{
 		metrics: entity.MetricsType{
 			Gauge:   make(map[string]float64, 30),
 			Counter: make(map[string]int64, 1),
 		},
 	}
-	runtime.ReadMemStats(&agntUscs.rtm)
+	runtime.ReadMemStats(&agentUsecase.rtm)
 
-	return agntUscs, nil
+	return agentUsecase, nil
 }
 
 func (a *Agent) UpdateCounter() error {

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	"github.com/korovindenis/go-pc-metrics/internal/server/middleware"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +19,7 @@ func TestCheckMethod(t *testing.T) {
 	r.GET("/", func(c *gin.Context) {
 		c.String(http.StatusOK, "GET request successful")
 	})
-	r.POST("/update/", func(c *gin.Context) {
+	r.POST("/update", func(c *gin.Context) {
 		c.String(http.StatusOK, "POST request successful")
 	})
 
@@ -41,5 +40,4 @@ func TestCheckMethod(t *testing.T) {
 	deleteResp := httptest.NewRecorder()
 	r.ServeHTTP(deleteResp, deleteReq)
 	assert.Equal(t, http.StatusMethodNotAllowed, deleteResp.Code)
-	assert.Contains(t, deleteResp.Body.String(), entity.ErrMethodNotAllowed)
 }

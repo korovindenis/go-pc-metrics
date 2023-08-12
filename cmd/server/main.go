@@ -4,54 +4,51 @@ import (
 	"log"
 	"os"
 
-	"github.com/korovindenis/go-pc-metrics/internal/adapter/env"
-	"github.com/korovindenis/go-pc-metrics/internal/adapter/flags"
+	"github.com/korovindenis/go-pc-metrics/internal/adapter/config"
 	storage "github.com/korovindenis/go-pc-metrics/internal/adapter/storage/memory"
 	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/server"
-	"github.com/korovindenis/go-pc-metrics/internal/server/handler"
-	server "github.com/korovindenis/go-pc-metrics/internal/server/serverapp"
+	serverhandler "github.com/korovindenis/go-pc-metrics/internal/server/handler"
+	serverapp "github.com/korovindenis/go-pc-metrics/internal/server/serverapp"
+)
+
+const (
+	EXIT_SUCCES     = 0
+	EXIT_WITH_ERROR = 1
 )
 
 func main() {
-	// init env
-	configEnv, err := env.New()
+	// init config (flags and env)
+	cfg, err := config.New()
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
-	}
-
-	// init flags
-	config, err := flags.New(configEnv)
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
+		os.Exit(EXIT_WITH_ERROR)
 	}
 
 	// init bd
 	storage, err := storage.New()
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
+		os.Exit(EXIT_WITH_ERROR)
 	}
 
 	// init server usecases
-	srvUscs, err := serverusecase.New(storage)
+	serverUsecase, err := serverusecase.New(storage)
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
+		os.Exit(EXIT_WITH_ERROR)
 	}
 
 	// init server handlers
-	srvHdlrs, err := handler.New(srvUscs)
+	serverHandlers, err := serverhandler.New(serverUsecase)
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
+		os.Exit(EXIT_WITH_ERROR)
 	}
 
 	// run web server
-	if err := server.Exec(config.GetHTTPAddress(), srvHdlrs); err != nil {
+	if err := serverapp.Exec(cfg, serverHandlers); err != nil {
 		log.Println(err)
-		os.Exit(1)
+		os.Exit(EXIT_WITH_ERROR)
 	}
-	os.Exit(0)
+	os.Exit(EXIT_SUCCES)
 }
