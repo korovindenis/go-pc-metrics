@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	EXIT_SUCCES     = 0
-	EXIT_WITH_ERROR = 1
+	ExitSucces    = 0
+	ExitWithError = 1
 )
 
 func main() {
@@ -21,34 +21,34 @@ func main() {
 	cfg, err := config.New()
 	if err != nil {
 		log.Println(err)
-		os.Exit(EXIT_WITH_ERROR)
+		os.Exit(ExitWithError)
 	}
 
 	// init bd
 	storage, err := storage.New()
 	if err != nil {
 		log.Println(err)
-		os.Exit(EXIT_WITH_ERROR)
+		os.Exit(ExitWithError)
 	}
 
 	// init server usecases
 	serverUsecase, err := serverusecase.New(storage)
 	if err != nil {
 		log.Println(err)
-		os.Exit(EXIT_WITH_ERROR)
+		os.Exit(ExitWithError)
 	}
 
 	// init server handlers
 	serverHandlers, err := serverhandler.New(serverUsecase)
 	if err != nil {
 		log.Println(err)
-		os.Exit(EXIT_WITH_ERROR)
+		os.Exit(ExitWithError)
 	}
 
 	// run web server
 	if err := serverapp.Exec(cfg, serverHandlers); err != nil {
 		log.Println(err)
-		os.Exit(EXIT_WITH_ERROR)
+		os.Exit(ExitWithError)
 	}
-	os.Exit(EXIT_SUCCES)
+	os.Exit(ExitSucces)
 }

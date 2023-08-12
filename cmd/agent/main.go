@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	EXIT_SUCCES     = 0
-	EXIT_WITH_ERROR = 1
+	ExitSucces    = 0
+	ExitWithError = 1
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	cfg, err := config.New()
 	if err != nil {
 		log.Println(err)
-		os.Exit(EXIT_WITH_ERROR)
+		os.Exit(ExitWithError)
 	}
 
 	// init logger
@@ -31,13 +31,13 @@ func main() {
 	agentUsecase, err := agentUsecase.New()
 	if err != nil {
 		log.Println(err)
-		os.Exit(EXIT_WITH_ERROR)
+		os.Exit(ExitWithError)
 	}
 
 	// run agent
 	if err := agent.Exec(agentUsecase, log, cfg); err != nil {
 		log.Println(err)
-		os.Exit(EXIT_WITH_ERROR)
+		os.Exit(ExitWithError)
 	}
-	os.Exit(EXIT_SUCCES)
+	os.Exit(ExitSucces)
 }
