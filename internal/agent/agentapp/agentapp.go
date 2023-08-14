@@ -27,19 +27,20 @@ type logger interface {
 
 // config functions
 type config interface {
-	GetHTTPAddressWithScheme() string
+	GetServerAddressWithScheme() string
 	GetPollInterval() time.Duration
 	GetReportInterval() time.Duration
 }
 
 // agent main
 func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
-	httpAddress := cfg.GetHTTPAddressWithScheme()
+	httpServerAddress := cfg.GetServerAddressWithScheme()
 	reportInterval := cfg.GetReportInterval()
 	pollInterval := cfg.GetPollInterval()
 
-	for mainTime := reportInterval; ; mainTime -= pollInterval {
-		// every 2 sec.
+	mainTime := reportInterval // 10 sec.
+	for {
+		/* every 2 sec. */
 		log.Println("update metrics")
 		if err := agentUsecase.UpdateGauge(); err != nil {
 			return err
@@ -47,15 +48,19 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 		if err := agentUsecase.UpdateCounter(); err != nil {
 			return err
 		}
+		time.Sleep(pollInterval)
 
-		// every 10 sec.
+		mainTime -= pollInterval // 10 sec. - 2 sec.
+		/* end */
+
+		/* every 10 sec. */
 		if mainTime <= 0 {
 			log.Println("send metrics")
 			gaugeVal, err := agentUsecase.GetGauge()
 			if err != nil {
 				return err
 			}
-			err = sendMetrics(gaugeVal, log, httpAddress)
+			err = sendMetrics(gaugeVal, log, httpServerAddress)
 			if err != nil {
 				return err
 			}
@@ -64,30 +69,29 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 			if err != nil {
 				return err
 			}
-			err = sendMetrics(counterVal, log, httpAddress)
+			err = sendMetrics(counterVal, log, httpServerAddress)
 			if err != nil {
 				return err
 			}
-			mainTime = reportInterval
+			mainTime = reportInterval // 10 sec.
 		}
-
-		time.Sleep(pollInterval)
+		/* end */
 	}
 }
 
 // prepare data
-func sendMetrics(metricsVal any, log logger, httpAddress string) error {
+func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
 	switch v := metricsVal.(type) {
 	case entity.GaugeType:
 		_ = v
 		for name, value := range metricsVal.(entity.GaugeType) {
-			if err := httpReq(log, httpAddress, "gauge", name, strconv.FormatFloat(value, 'g', -1, 64)); err != nil {
+			if err := httpReq(log, httpServerAddress, "gauge", name, strconv.FormatFloat(value, 'g', -1, 64)); err != nil {
 				return err
 			}
 		}
 	case entity.CounterType:
 		for name, value := range metricsVal.(entity.CounterType) {
-			if err := httpReq(log, httpAddress, "counter", name, strconv.FormatInt(value, 10)); err != nil {
+			if err := httpReq(log, httpServerAddress, "counter", name, strconv.FormatInt(value, 10)); err != nil {
 				return err
 			}
 		}
@@ -99,8 +103,8 @@ func sendMetrics(metricsVal any, log logger, httpAddress string) error {
 }
 
 // send data
-func httpReq(log logger, httpAddress, metricType, metricName, metricVal string) error {
-	uri := fmt.Sprintf("%s/update/%s/%s/%s", httpAddress, metricType, metricName, metricVal)
+func httpReq(log logger, httpServerAddress, metricType, metricName, metricVal string) error {
+	uri := fmt.Sprintf("%s/update/%s/%s/%s", httpServerAddress, metricType, metricName, metricVal)
 	log.Println(uri)
 
 	// HTTP POST request

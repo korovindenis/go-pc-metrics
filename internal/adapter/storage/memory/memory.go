@@ -9,11 +9,11 @@ type Storage struct {
 }
 
 func New() (*Storage, error) {
-	strg := &Storage{}
-	strg.MetricsType.Gauge = make(map[string]float64)
-	strg.MetricsType.Counter = make(map[string]int64)
+	storage := &Storage{}
+	storage.MetricsType.Gauge = make(map[string]float64)
+	storage.MetricsType.Counter = make(map[string]int64)
 
-	return strg, nil
+	return storage, nil
 }
 
 func (m *Storage) SaveGauge(gaugeName string, gaugeValue float64) error {

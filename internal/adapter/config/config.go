@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"os"
 	"strconv"
 	"time"
@@ -23,37 +22,35 @@ func New() (*configAdapter, error) {
 		Short: "metrics",
 	}
 
-	if envHTTPAddress, err := getEnvVariable("ADDRESS"); envHTTPAddress == "" || errors.Is(err, entity.ErrEnvVarNotFound) {
-		rootCmd.Flags().StringVarP(&adapter.httpAddress, "address", "a", "localhost:8080", "HTTP server address")
-	} else {
-		adapter.httpAddress = envHTTPAddress
-	}
-
-	if reportInterval, err := getEnvVariable("REPORT_INTERVAL"); reportInterval == "" || errors.Is(err, entity.ErrEnvVarNotFound) {
-		rootCmd.Flags().IntVarP(&adapter.reportInterval, "report", "r", 10, "Metrics report interval")
-	} else {
-		adapter.reportInterval, _ = strconv.Atoi(reportInterval)
-	}
-
-	if pollInterval, err := getEnvVariable("POLL_INTERVAL"); pollInterval == "" || errors.Is(err, entity.ErrEnvVarNotFound) {
-		rootCmd.Flags().IntVarP(&adapter.pollInterval, "poll", "p", 2, "Metrics poll interval")
-	} else {
-		adapter.pollInterval, _ = strconv.Atoi(pollInterval)
-	}
-
+	// get data from flags
+	rootCmd.Flags().StringVarP(&adapter.httpAddress, "address", "a", "localhost:8080", "HTTP server address")
+	rootCmd.Flags().IntVarP(&adapter.reportInterval, "report", "r", 10, "Metrics report interval")
+	rootCmd.Flags().IntVarP(&adapter.pollInterval, "poll", "p", 2, "Metrics poll interval")
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
+	}
+
+	// if env var not empty
+	// get data from env
+	if envHTTPAddress, err := getEnvVariable("ADDRESS"); err != nil {
+		adapter.httpAddress = envHTTPAddress
+	}
+	if reportInterval, err := getEnvVariable("REPORT_INTERVAL"); err != nil {
+		adapter.reportInterval, _ = strconv.Atoi(reportInterval)
+	}
+	if pollInterval, err := getEnvVariable("POLL_INTERVAL"); err != nil {
+		adapter.pollInterval, _ = strconv.Atoi(pollInterval)
 	}
 
 	return &adapter, nil
 }
 
-func (f *configAdapter) GetHTTPAddress() string {
+func (f *configAdapter) GetServerAddress() string {
 	return f.httpAddress
 }
 
-func (f *configAdapter) GetHTTPAddressWithScheme() string {
-	return "http://" + f.httpAddress
+func (f *configAdapter) GetServerAddressWithScheme() string {
+	return "http://" + f.GetServerAddress()
 }
 
 func (f *configAdapter) GetReportInterval() time.Duration {
@@ -65,7 +62,7 @@ func (f *configAdapter) GetPollInterval() time.Duration {
 }
 
 func getEnvVariable(varName string) (string, error) {
-	if envVarValue, exists := os.LookupEnv(varName); exists {
+	if envVarValue, exists := os.LookupEnv(varName); exists && envVarValue != "" {
 		return envVarValue, nil
 	}
 	return "", entity.ErrEnvVarNotFound

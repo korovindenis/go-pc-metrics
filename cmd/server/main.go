@@ -39,14 +39,14 @@ func main() {
 	}
 
 	// init server handlers
-	serverHandlers, err := serverhandler.New(serverUsecase)
+	serverHandler, err := serverhandler.New(serverUsecase)
 	if err != nil {
 		log.Println(err)
 		os.Exit(ExitWithError)
 	}
 
 	// run web server
-	if err := serverapp.Exec(cfg, serverHandlers); err != nil {
+	if err := serverapp.Exec(cfg, serverHandler); err != nil {
 		log.Println(err)
 		os.Exit(ExitWithError)
 	}

@@ -5,13 +5,13 @@ type logger interface {
 }
 
 type LogAdapter struct {
-	logger logger
+	log logger
 }
 
 func New(l logger) *LogAdapter {
-	return &LogAdapter{logger: l}
+	return &LogAdapter{log: l}
 }
 
 func (l *LogAdapter) Println(v ...interface{}) {
-	l.logger.Println(v...)
+	l.log.Println(v...)
 }

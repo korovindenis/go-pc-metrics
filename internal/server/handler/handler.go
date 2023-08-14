@@ -21,12 +21,12 @@ type usecase interface {
 }
 
 type Handler struct {
-	srvUsecase usecase
+	serverUsecase usecase
 }
 
 func New(u usecase) (*Handler, error) {
 	return &Handler{
-		srvUsecase: u,
+		serverUsecase: u,
 	}, nil
 }
 
@@ -55,7 +55,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		}
 
 		// save metric
-		if err = s.srvUsecase.SaveGaugeUsecase(namedURL.MetricName, metricVal); err != nil {
+		err = s.serverUsecase.SaveGaugeUsecase(namedURL.MetricName, metricVal)
+		if err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
@@ -68,7 +69,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		}
 
 		// save metric
-		if err = s.srvUsecase.SaveCounterUsecase(namedURL.MetricName, metricVal); err != nil {
+		err = s.serverUsecase.SaveCounterUsecase(namedURL.MetricName, metricVal)
+		if err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
@@ -96,7 +98,7 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 	switch namedURL.MetricType {
 	case "gauge":
 		// get metric
-		gaugeVal, err := s.srvUsecase.GetGaugeUsecase(namedURL.MetricName)
+		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(namedURL.MetricName)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
@@ -110,7 +112,7 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 		c.String(http.StatusOK, strconv.FormatFloat(gaugeVal, 'g', -1, 64))
 	case "counter":
 		// get metric
-		counterVal, err := s.srvUsecase.GetCounterUsecase(namedURL.MetricName)
+		counterVal, err := s.serverUsecase.GetCounterUsecase(namedURL.MetricName)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
@@ -130,7 +132,7 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 }
 
 func (s *Handler) OutputAllMetrics(c *gin.Context) {
-	data, err := s.srvUsecase.GetAllDataUsecase()
+	data, err := s.serverUsecase.GetAllDataUsecase()
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return

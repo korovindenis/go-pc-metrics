@@ -14,12 +14,12 @@ type serverHandler interface {
 
 // config functions
 type config interface {
-	GetHTTPAddress() string
+	GetServerAddress() string
 }
 
 // server main
 func Exec(cfg config, handler serverHandler) error {
-	httpAddress := cfg.GetHTTPAddress()
+	httpAddress := cfg.GetServerAddress()
 	router := gin.Default()
 
 	// html template

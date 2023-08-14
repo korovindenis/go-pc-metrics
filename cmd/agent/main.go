@@ -24,8 +24,8 @@ func main() {
 	}
 
 	// init logger
-	stdLog := log.New(log.Writer(), "", log.Flags())
-	log := logger.New(stdLog)
+	standartGoLogger := log.New(log.Writer(), "", log.Flags())
+	log := logger.New(standartGoLogger)
 
 	// init usecases
 	agentUsecase, err := agentUsecase.New()
