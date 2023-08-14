@@ -32,13 +32,13 @@ func New() (*configAdapter, error) {
 
 	// if env var not empty
 	// get data from env
-	if envHTTPAddress, err := getEnvVariable("ADDRESS"); err != nil {
+	if envHTTPAddress, err := getEnvVariable("ADDRESS"); err == nil {
 		adapter.httpAddress = envHTTPAddress
 	}
-	if reportInterval, err := getEnvVariable("REPORT_INTERVAL"); err != nil {
+	if reportInterval, err := getEnvVariable("REPORT_INTERVAL"); err == nil {
 		adapter.reportInterval, _ = strconv.Atoi(reportInterval)
 	}
-	if pollInterval, err := getEnvVariable("POLL_INTERVAL"); err != nil {
+	if pollInterval, err := getEnvVariable("POLL_INTERVAL"); err == nil {
 		adapter.pollInterval, _ = strconv.Atoi(pollInterval)
 	}
 
