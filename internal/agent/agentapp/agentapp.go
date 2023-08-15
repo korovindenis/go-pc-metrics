@@ -35,26 +35,20 @@ type config interface {
 // agent main
 func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 	httpServerAddress := cfg.GetServerAddressWithScheme()
-	reportInterval := cfg.GetReportInterval()
-	pollInterval := cfg.GetPollInterval()
 
-	mainTime := reportInterval // 10 sec.
+	updateTicker := time.NewTicker(cfg.GetPollInterval())
+	sendTicker := time.NewTicker(cfg.GetReportInterval())
 	for {
-		/* every 2 sec. */
-		log.Println("update metrics")
-		if err := agentUsecase.UpdateGauge(); err != nil {
-			return err
-		}
-		if err := agentUsecase.UpdateCounter(); err != nil {
-			return err
-		}
-		time.Sleep(pollInterval)
-
-		mainTime -= pollInterval // 10 sec. - 2 sec.
-		/* end */
-
-		/* every 10 sec. */
-		if mainTime <= 0 {
+		select {
+		case <-updateTicker.C:
+			log.Println("update metrics")
+			if err := agentUsecase.UpdateGauge(); err != nil {
+				return err
+			}
+			if err := agentUsecase.UpdateCounter(); err != nil {
+				return err
+			}
+		case <-sendTicker.C:
 			log.Println("send metrics")
 			gaugeVal, err := agentUsecase.GetGauge()
 			if err != nil {
@@ -64,7 +58,6 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 			if err != nil {
 				return err
 			}
-
 			counterVal, err := agentUsecase.GetCounter()
 			if err != nil {
 				return err
@@ -73,16 +66,15 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 			if err != nil {
 				return err
 			}
-			mainTime = reportInterval // 10 sec.
 		}
-		/* end */
 	}
 }
 
 // prepare data
 func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
-	switch metricsVal.(type) {
+	switch v := metricsVal.(type) {
 	case entity.GaugeType:
+		_ = v // for go vet
 		for name, value := range metricsVal.(entity.GaugeType) {
 			if err := httpReq(log, httpServerAddress, "gauge", name, strconv.FormatFloat(value, 'g', -1, 64)); err != nil {
 				return err
