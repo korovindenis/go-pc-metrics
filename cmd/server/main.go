@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	ExitSucces    = 0
-	ExitWithError = 1
+	ExitSucces = iota
+	ExitWithError
 )
 
 func main() {

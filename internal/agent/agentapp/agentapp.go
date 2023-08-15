@@ -81,9 +81,8 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 
 // prepare data
 func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
-	switch v := metricsVal.(type) {
+	switch metricsVal.(type) {
 	case entity.GaugeType:
-		_ = v
 		for name, value := range metricsVal.(entity.GaugeType) {
 			if err := httpReq(log, httpServerAddress, "gauge", name, strconv.FormatFloat(value, 'g', -1, 64)); err != nil {
 				return err
