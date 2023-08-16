@@ -37,7 +37,11 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 	httpServerAddress := cfg.GetServerAddressWithScheme()
 
 	updateTicker := time.NewTicker(cfg.GetPollInterval())
+	defer updateTicker.Stop()
+
 	sendTicker := time.NewTicker(cfg.GetReportInterval())
+	defer sendTicker.Stop()
+
 	for {
 		select {
 		case <-updateTicker.C:
