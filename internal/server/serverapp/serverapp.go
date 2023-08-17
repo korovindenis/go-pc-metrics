@@ -2,6 +2,7 @@ package serverapp
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/server/middleware"
 )
 
@@ -26,6 +27,7 @@ func Exec(cfg config, handler serverHandler) error {
 	router.LoadHTMLGlob("./internal/server/templates/*.html")
 
 	// middleware
+	router.Use(logger.RequestLogger())
 	router.Use(middleware.CheckMethod())
 	router.Use(gin.Recovery())
 

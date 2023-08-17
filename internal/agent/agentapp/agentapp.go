@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"go.uber.org/zap/zapcore"
 )
 
 // agent functions
@@ -22,7 +23,7 @@ type agentUsecase interface {
 
 // logger functions
 type logger interface {
-	Println(v ...interface{})
+	Info(msg string, fields ...zapcore.Field)
 }
 
 // config functions
@@ -45,7 +46,7 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 	for {
 		select {
 		case <-updateTicker.C:
-			log.Println("update metrics")
+			log.Info("update metrics")
 			if err := agentUsecase.UpdateGauge(); err != nil {
 				return err
 			}
@@ -53,7 +54,7 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 				return err
 			}
 		case <-sendTicker.C:
-			log.Println("send metrics")
+			log.Info("send metrics")
 			gaugeVal, err := agentUsecase.GetGauge()
 			if err != nil {
 				return err
@@ -100,7 +101,7 @@ func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
 // send data
 func httpReq(log logger, httpServerAddress, metricType, metricName, metricVal string) error {
 	uri := fmt.Sprintf("%s/update/%s/%s/%s", httpServerAddress, metricType, metricName, metricVal)
-	log.Println(uri)
+	log.Info(uri)
 
 	// HTTP POST request
 	req, err := http.NewRequest(http.MethodPost, uri, strings.NewReader(""))
