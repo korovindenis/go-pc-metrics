@@ -33,6 +33,8 @@ type config interface {
 
 // agent main
 func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
+	var restClient = resty.New()
+
 	httpServerAddress := cfg.GetServerAddressWithScheme()
 
 	updateTicker := time.NewTicker(cfg.GetPollInterval())
@@ -57,7 +59,7 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 			if err != nil {
 				return err
 			}
-			err = sendMetrics(gaugeVal, log, httpServerAddress)
+			err = sendMetrics(restClient, gaugeVal, log, httpServerAddress)
 			if err != nil {
 				return err
 			}
@@ -65,7 +67,7 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 			if err != nil {
 				return err
 			}
-			err = sendMetrics(counterVal, log, httpServerAddress)
+			err = sendMetrics(restClient, counterVal, log, httpServerAddress)
 			if err != nil {
 				return err
 			}
@@ -74,7 +76,7 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 }
 
 // prepare data
-func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
+func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServerAddress string) error {
 	switch v := metricsVal.(type) {
 	case entity.GaugeType:
 		_ = v // for go vet
@@ -84,7 +86,7 @@ func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
 				MType: "gauge",
 				Value: &value,
 			}
-			if err := httpReq(log, httpServerAddress, metrics); err != nil {
+			if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
 				return err
 			}
 		}
@@ -95,7 +97,7 @@ func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
 				MType: "counter",
 				Delta: &value,
 			}
-			if err := httpReq(log, httpServerAddress, metrics); err != nil {
+			if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
 				return err
 			}
 		}
@@ -107,7 +109,7 @@ func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
 }
 
 // send data
-func httpReq(log logger, httpServerAddress string, metrics entity.Metrics) error {
+func httpReq(restClient *resty.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
 
 	// payload, err := json.Marshal(metrics)
 	// if err != nil {
@@ -130,7 +132,7 @@ func httpReq(log logger, httpServerAddress string, metrics entity.Metrics) error
 	// defer resp.Body.Close()
 
 	log.Info("Send: " + fmt.Sprintf("%+v", metrics))
-	_, err := resty.New().R().
+	_, err := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(metrics).
 		Post(fmt.Sprintf("%s/update/", httpServerAddress))
