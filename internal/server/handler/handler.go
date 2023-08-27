@@ -30,11 +30,21 @@ func New(u usecase) (*Handler, error) {
 }
 
 func (s *Handler) ReceptionMetrics(c *gin.Context) {
-	// get metric from body
 	var metrics entity.Metrics
-	if err := c.ShouldBindJSON(&metrics); err != nil {
-		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
-		return
+
+	contentType := c.GetHeader("Content-Type")
+	if contentType == "application/json" {
+		// get metric from body
+		if err := c.ShouldBindJSON(&metrics); err != nil {
+			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+			return
+		}
+	} else {
+		// get metric from url
+		metrics = entity.Metrics{
+			MType: c.Param("metricType"),
+			ID:    c.Param("metricName"),
+		}
 	}
 
 	// validate metrics
@@ -74,11 +84,21 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 }
 
 func (s *Handler) OutputMetric(c *gin.Context) {
-	// get metric from body
 	var metrics entity.Metrics
-	if err := c.ShouldBindJSON(&metrics); err != nil {
-		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
-		return
+
+	contentType := c.GetHeader("Content-Type")
+	if contentType == "application/json" {
+		// get metric from body
+		if err := c.ShouldBindJSON(&metrics); err != nil {
+			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+			return
+		}
+	} else {
+		// get metric from url
+		metrics = entity.Metrics{
+			MType: c.Param("metricType"),
+			ID:    c.Param("metricName"),
+		}
 	}
 
 	// validate metrics

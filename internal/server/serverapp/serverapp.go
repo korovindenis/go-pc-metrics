@@ -33,7 +33,9 @@ func Exec(cfg config, handler serverHandler) error {
 
 	// routes
 	router.GET("/", handler.OutputAllMetrics)
+	router.GET("/value/:metricType/:metricName", handler.OutputMetric)
 	router.POST("/value/", handler.OutputMetric)
+	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetrics)
 	router.POST("/update/", handler.ReceptionMetrics)
 
 	// start server

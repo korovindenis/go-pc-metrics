@@ -10,15 +10,15 @@ type MetricsType struct {
 	Counter CounterType
 }
 
-// type MetricsURI struct {
-// 	MetricType string
-// 	MetricName string
-// 	MetricVal  string
-// }
+type MetricsURI struct {
+	MetricType string
+	MetricName string
+	MetricVal  string
+}
 
 type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	ID    string   `json:"id"`
+	MType string   `json:"type"`
+	Delta *int64   `json:"delta,omitempty"`
+	Value *float64 `json:"value,omitempty"`
 }
