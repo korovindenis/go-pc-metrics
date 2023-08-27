@@ -1,13 +1,11 @@
 package agentapp
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	"go.uber.org/zap/zapcore"
 )
@@ -110,27 +108,34 @@ func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
 
 // send data
 func httpReq(log logger, httpServerAddress string, metrics entity.Metrics) error {
-	uri := fmt.Sprintf("%s/update/", httpServerAddress)
 
-	payload, err := json.Marshal(metrics)
-	if err != nil {
-		return err
-	}
+	// payload, err := json.Marshal(metrics)
+	// if err != nil {
+	// 	return err
+	// }
 
-	log.Info("Send: " + string(payload))
+	//log.Info("Send: " + string(payload))
 
 	// HTTP POST request
-	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(payload))
-	req.Header.Set("Content-Type", "application/json")
-	if err != nil {
-		return err
-	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+	// req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(payload))
+	// req.Header.Set("Content-Type", "application/json")
+	// if err != nil {
+	// 	return err
+	// }
+	// client := &http.Client{}
+	// resp, err := client.Do(req)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer resp.Body.Close()
 
+	log.Info("Send: " + fmt.Sprintf("%+v", metrics))
+	_, err := resty.New().R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(metrics).
+		Post(fmt.Sprintf("%s/update/", httpServerAddress))
+	if err != nil {
+		return err
+	}
 	return nil
 }
