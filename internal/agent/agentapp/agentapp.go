@@ -130,18 +130,9 @@ func httpReq(restClient *resty.Client, log logger, httpServerAddress string, met
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
 		return err
 	}
 	defer resp.Body.Close()
 
-	// log.Info("Send: " + fmt.Sprintf("%+v", metrics))
-	// _, err := restClient.R().
-	// 	SetHeader("Content-Type", "application/json").
-	// 	SetBody(metrics).
-	// 	Post(fmt.Sprintf("%s/update/", httpServerAddress))
-	// if err != nil {
-	// 	return err
-	// }
 	return nil
 }
