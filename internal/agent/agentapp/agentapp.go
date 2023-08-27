@@ -130,12 +130,12 @@ func httpReq(log logger, httpServerAddress string, metrics entity.Metrics) error
 	// defer resp.Body.Close()
 
 	log.Info("Send: " + fmt.Sprintf("%+v", metrics))
-	_, err := resty.New().R().
+	resty.New().R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(metrics).
 		Post(fmt.Sprintf("%s/update/", httpServerAddress))
-	if err != nil {
-		return err
-	}
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
