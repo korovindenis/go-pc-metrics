@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	"go.uber.org/zap/zapcore"
 )
@@ -36,7 +35,7 @@ type config interface {
 
 // agent main
 func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
-	var restClient = resty.New()
+	restClient := &http.Client{}
 
 	httpServerAddress := cfg.GetServerAddressWithScheme()
 
@@ -79,7 +78,7 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 }
 
 // prepare data
-func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServerAddress string) error {
+func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServerAddress string) error {
 	switch v := metricsVal.(type) {
 	case entity.GaugeType:
 		_ = v // for go vet
@@ -112,7 +111,7 @@ func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServe
 }
 
 // send data
-func httpReq(restClient *resty.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
+func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
 
 	payload, err := json.Marshal(metrics)
 	if err != nil {
@@ -127,8 +126,8 @@ func httpReq(restClient *resty.Client, log logger, httpServerAddress string, met
 	if err != nil {
 		return err
 	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
+
+	resp, err := restClient.Do(req)
 	if err != nil {
 		return err
 	}
