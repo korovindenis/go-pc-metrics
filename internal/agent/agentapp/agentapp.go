@@ -1,11 +1,11 @@
 package agentapp
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
@@ -81,13 +81,23 @@ func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
 	case entity.GaugeType:
 		_ = v // for go vet
 		for name, value := range metricsVal.(entity.GaugeType) {
-			if err := httpReq(log, httpServerAddress, "gauge", name, strconv.FormatFloat(value, 'g', -1, 64)); err != nil {
+			metrics := entity.Metrics{
+				ID:    name,
+				MType: "gauge",
+				Value: &value,
+			}
+			if err := httpReq(log, httpServerAddress, metrics); err != nil {
 				return err
 			}
 		}
 	case entity.CounterType:
 		for name, value := range metricsVal.(entity.CounterType) {
-			if err := httpReq(log, httpServerAddress, "counter", name, strconv.FormatInt(value, 10)); err != nil {
+			metrics := entity.Metrics{
+				ID:    name,
+				MType: "counter",
+				Delta: &value,
+			}
+			if err := httpReq(log, httpServerAddress, metrics); err != nil {
 				return err
 			}
 		}
@@ -99,12 +109,19 @@ func sendMetrics(metricsVal any, log logger, httpServerAddress string) error {
 }
 
 // send data
-func httpReq(log logger, httpServerAddress, metricType, metricName, metricVal string) error {
-	uri := fmt.Sprintf("%s/update/%s/%s/%s", httpServerAddress, metricType, metricName, metricVal)
-	log.Info(uri)
+func httpReq(log logger, httpServerAddress string, metrics entity.Metrics) error {
+	uri := fmt.Sprintf("%s/update/", httpServerAddress)
+
+	payload, err := json.Marshal(metrics)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Send: " + string(payload))
 
 	// HTTP POST request
-	req, err := http.NewRequest(http.MethodPost, uri, strings.NewReader(""))
+	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(payload))
+	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return err
 	}

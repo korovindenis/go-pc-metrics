@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
@@ -31,74 +30,67 @@ func New(u usecase) (*Handler, error) {
 }
 
 func (s *Handler) ReceptionMetrics(c *gin.Context) {
-	// get metric from url
-	namedURL := entity.MetricsURI{
-		MetricType: c.Param("metricType"),
-		MetricName: c.Param("metricName"),
-		MetricVal:  c.Param("metricVal"),
+	// get metric from body
+	var metrics entity.Metrics
+	if err := c.ShouldBindJSON(&metrics); err != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+		return
 	}
 
 	// validate metrics
-	if namedURL.MetricType == "" || namedURL.MetricName == "" || namedURL.MetricVal == "" {
+	if metrics.ID == "" || metrics.MType == "" {
 		c.AbortWithError(http.StatusNotFound, entity.ErrInvalidURLFormat)
 		return
 	}
 
 	// run usecases
-	switch namedURL.MetricType {
+	switch metrics.MType {
 	case "gauge":
-		// to float64
-		metricVal, err := strconv.ParseFloat(namedURL.MetricVal, 64)
-		if err != nil {
-			c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
-			return
-		}
-
 		// save metric
-		err = s.serverUsecase.SaveGaugeUsecase(namedURL.MetricName, metricVal)
-		if err != nil {
+		if err := s.serverUsecase.SaveGaugeUsecase(metrics.ID, *metrics.Value); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
+
+		// show actual metrics
+		gaugeVal, _ := s.serverUsecase.GetGaugeUsecase(metrics.ID)
+		metrics.Value = &gaugeVal
+		c.JSON(http.StatusOK, metrics)
 	case "counter":
-		// to int64
-		metricVal, err := strconv.ParseInt(namedURL.MetricVal, 10, 64)
-		if err != nil {
-			c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
-			return
-		}
-
 		// save metric
-		err = s.serverUsecase.SaveCounterUsecase(namedURL.MetricName, metricVal)
-		if err != nil {
+		if err := s.serverUsecase.SaveCounterUsecase(metrics.ID, *metrics.Delta); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
+
+		// show actual metrics
+		counterVal, _ := s.serverUsecase.GetCounterUsecase(metrics.ID)
+		metrics.Delta = &counterVal
+		c.JSON(http.StatusOK, metrics)
 	default:
 		c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 		return
 	}
-
-	c.Status(http.StatusOK)
 }
 
 func (s *Handler) OutputMetric(c *gin.Context) {
-	// get metric from url
-	namedURL := entity.MetricsURI{
-		MetricType: c.Param("metricType"),
-		MetricName: c.Param("metricName"),
+	// get metric from body
+	var metrics entity.Metrics
+	if err := c.ShouldBindJSON(&metrics); err != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+		return
 	}
 
 	// validate metrics
-	if namedURL.MetricType == "" || namedURL.MetricName == "" {
+	if metrics.MType == "" || metrics.ID == "" {
 		c.AbortWithError(http.StatusNotFound, entity.ErrInvalidURLFormat)
 		return
 	}
 
-	switch namedURL.MetricType {
+	switch metrics.MType {
 	case "gauge":
 		// get metric
-		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(namedURL.MetricName)
+		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(metrics.ID)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
@@ -109,10 +101,11 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 		}
 
 		// show metric
-		c.String(http.StatusOK, strconv.FormatFloat(gaugeVal, 'g', -1, 64))
+		metrics.Value = &gaugeVal
+		c.JSON(http.StatusOK, metrics)
 	case "counter":
 		// get metric
-		counterVal, err := s.serverUsecase.GetCounterUsecase(namedURL.MetricName)
+		counterVal, err := s.serverUsecase.GetCounterUsecase(metrics.ID)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
@@ -123,7 +116,8 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 		}
 
 		// show metric
-		c.String(http.StatusOK, strconv.FormatInt(counterVal, 10))
+		metrics.Delta = &counterVal
+		c.JSON(http.StatusOK, metrics)
 	default:
 		c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 		return
