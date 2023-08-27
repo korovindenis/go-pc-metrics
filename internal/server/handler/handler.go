@@ -47,11 +47,21 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 			ID:    c.Param("metricName"),
 		}
 		if c.Param("metricType") == "counter" {
-			metricVal, _ := strconv.ParseInt(c.Param("metricVal"), 10, 64)
+			metricVal, err := strconv.ParseInt(c.Param("metricVal"), 10, 64)
+			if err != nil {
+				c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
+				return
+			}
+
 			metrics.Delta = &metricVal
 		}
 		if c.Param("metricType") == "gauge" {
-			metricVal, _ := strconv.ParseFloat(c.Param("metricVal"), 64)
+			metricVal, err := strconv.ParseFloat(c.Param("metricVal"), 64)
+			if err != nil {
+				c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
+				return
+			}
+
 			metrics.Value = &metricVal
 		}
 	}
