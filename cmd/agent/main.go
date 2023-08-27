@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -42,7 +41,6 @@ func main() {
 	// run agent
 	if err := agent.Exec(agentUsecase, logger.Log, cfg); err != nil {
 		logger.Log.Error("run agent", zap.Error(err))
-		fmt.Println(err)
 		os.Exit(ExitWithError)
 	}
 	os.Exit(ExitSucces)
