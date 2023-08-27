@@ -88,7 +88,7 @@ func TestOutputMetric(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Equal(t, "{\"id\":\"OtherSys\",\"type\":\"gauge\",\"value\":471728}", w.Body.String())
+		assert.Equal(t, "471728", w.Body.String())
 		mockUsecase.AssertExpectations(t)
 	})
 
