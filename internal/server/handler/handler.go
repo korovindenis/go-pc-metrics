@@ -84,7 +84,11 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		// show actual metrics
 		gaugeVal, _ := s.serverUsecase.GetGaugeUsecase(metrics.ID)
 		metrics.Value = &gaugeVal
-		c.JSON(http.StatusOK, metrics)
+		if contentType == "application/json" {
+			c.JSON(http.StatusOK, metrics)
+			return
+		}
+		c.Status(http.StatusOK)
 	case "counter":
 		// save metric
 		if err := s.serverUsecase.SaveCounterUsecase(metrics.ID, *metrics.Delta); err != nil {
@@ -95,11 +99,16 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		// show actual metrics
 		counterVal, _ := s.serverUsecase.GetCounterUsecase(metrics.ID)
 		metrics.Delta = &counterVal
-		c.JSON(http.StatusOK, metrics)
+		if contentType == "application/json" {
+			c.JSON(http.StatusOK, metrics)
+			return
+		}
+		c.Status(http.StatusOK)
 	default:
 		c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 		return
 	}
+
 }
 
 func (s *Handler) OutputMetric(c *gin.Context) {
@@ -141,7 +150,11 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 
 		// show metric
 		metrics.Value = &gaugeVal
-		c.JSON(http.StatusOK, metrics)
+		if contentType == "application/json" {
+			c.JSON(http.StatusOK, metrics)
+			return
+		}
+		c.String(http.StatusOK, strconv.FormatFloat(gaugeVal, 'g', -1, 64))
 	case "counter":
 		// get metric
 		counterVal, err := s.serverUsecase.GetCounterUsecase(metrics.ID)
@@ -156,12 +169,15 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 
 		// show metric
 		metrics.Delta = &counterVal
-		c.JSON(http.StatusOK, metrics)
+		if contentType == "application/json" {
+			c.JSON(http.StatusOK, metrics)
+			return
+		}
+		c.String(http.StatusOK, strconv.FormatInt(counterVal, 10))
 	default:
 		c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 		return
 	}
-
 }
 
 func (s *Handler) OutputAllMetrics(c *gin.Context) {
