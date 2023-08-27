@@ -33,7 +33,7 @@ func New(u usecase) (*Handler, error) {
 func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	var metrics entity.Metrics
 
-	if c.Param("metricType") != "" {
+	if c.Param("metricType") == "" {
 		// get metric from body
 		if err := c.ShouldBindJSON(&metrics); err != nil {
 			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
@@ -83,7 +83,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		// show actual metrics
 		gaugeVal, _ := s.serverUsecase.GetGaugeUsecase(metrics.ID)
 		metrics.Value = &gaugeVal
-		if c.Param("metricType") != "" {
+		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
 			return
 		}
@@ -98,7 +98,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		// show actual metrics
 		counterVal, _ := s.serverUsecase.GetCounterUsecase(metrics.ID)
 		metrics.Delta = &counterVal
-		if c.Param("metricType") != "" {
+		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
 			return
 		}
@@ -113,7 +113,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 func (s *Handler) OutputMetric(c *gin.Context) {
 	var metrics entity.Metrics
 
-	if c.Param("metricType") != "" {
+	if c.Param("metricType") == "" {
 		// get metric from body
 		if err := c.ShouldBindJSON(&metrics); err != nil {
 			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
@@ -148,7 +148,7 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 
 		// show metric
 		metrics.Value = &gaugeVal
-		if c.Param("metricType") != "" {
+		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
 			return
 		}
@@ -167,7 +167,7 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 
 		// show metric
 		metrics.Delta = &counterVal
-		if c.Param("metricType") != "" {
+		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
 			return
 		}
