@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
@@ -44,6 +45,14 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		metrics = entity.Metrics{
 			MType: c.Param("metricType"),
 			ID:    c.Param("metricName"),
+		}
+		if c.Param("metricType") == "counter" {
+			metricVal, _ := strconv.ParseInt(c.Param("metricVal"), 10, 64)
+			metrics.Delta = &metricVal
+		}
+		if c.Param("metricType") == "gauge" {
+			metricVal, _ := strconv.ParseFloat(c.Param("metricVal"), 64)
+			metrics.Value = &metricVal
 		}
 	}
 
