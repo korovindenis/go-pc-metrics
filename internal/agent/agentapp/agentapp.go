@@ -2,6 +2,7 @@ package agentapp
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -112,16 +113,27 @@ func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServer
 
 // send data
 func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
+	// Create a buffer to hold the request body
+	var requestBody bytes.Buffer
+
+	// Compress the request body
+	gz := gzip.NewWriter(&requestBody)
 
 	payload, err := json.Marshal(metrics)
 	if err != nil {
 		return err
 	}
 
+	gz.Write(payload)
+	gz.Close()
+
 	log.Info("Send: " + string(payload))
 
 	//HTTP POST request
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/update/", httpServerAddress), bytes.NewBuffer(payload))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/update/", httpServerAddress), &requestBody)
+	// Set the header
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return err
