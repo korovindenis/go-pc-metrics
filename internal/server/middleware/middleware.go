@@ -1,9 +1,8 @@
 package middleware
 
 import (
-	"bytes"
 	"compress/gzip"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -22,27 +21,21 @@ func CheckMethod() gin.HandlerFunc {
 
 		contentEncoding := c.GetHeader("Content-Encoding")
 		if strings.ToLower(contentEncoding) == "gzip" {
-			body, err := ioutil.ReadAll(c.Request.Body)
+			reader, err := gzip.NewReader(c.Request.Body)
 			if err != nil {
 				c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
 				return
 			}
+			defer reader.Close()
 
-			reader, err := gzip.NewReader(bytes.NewReader(body))
-			if err != nil {
+			var buf strings.Builder
+			if _, err := io.Copy(&buf, reader); err != nil {
 				c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
 				return
 			}
 
-			uncompressedBody, err := ioutil.ReadAll(reader)
-			if err != nil {
-				c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
-				return
-			}
-
-			c.Request.Body = ioutil.NopCloser(bytes.NewReader(uncompressedBody))
+			c.Request.Body = io.NopCloser(strings.NewReader(buf.String()))
 		}
-
 		c.Next()
 	}
 }
