@@ -18,7 +18,7 @@ const (
 
 func main() {
 	// init config (flags and env)
-	cfg, err := config.New()
+	cfg, err := config.New(false)
 	if err != nil {
 		log.Println(err)
 		os.Exit(ExitWithError)

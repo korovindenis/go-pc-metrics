@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/korovindenis/go-pc-metrics/internal/adapter/config"
-	storage "github.com/korovindenis/go-pc-metrics/internal/adapter/storage/memory"
+	storage "github.com/korovindenis/go-pc-metrics/internal/adapter/storage/disk"
 	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/server"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	serverhandler "github.com/korovindenis/go-pc-metrics/internal/server/handler"
@@ -20,7 +20,7 @@ const (
 
 func main() {
 	// init config (flags and env)
-	cfg, err := config.New()
+	cfg, err := config.New(true)
 	if err != nil {
 		log.Println(err)
 		os.Exit(ExitWithError)
@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// init bd
-	storage, err := storage.New()
+	storage, err := storage.New(cfg)
 	if err != nil {
 		logger.Log.Error("init bd", zap.Error(err))
 		os.Exit(ExitWithError)
