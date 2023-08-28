@@ -3,7 +3,6 @@ package agentapp
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -34,7 +33,8 @@ type config interface {
 
 // agent main
 func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
-	restClient := &http.Client{}
+	restClient := resty.New()
+	restClient.SetTimeout(time.Second * 10)
 
 	httpServerAddress := cfg.GetServerAddressWithScheme()
 
@@ -77,7 +77,7 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 }
 
 // prepare data
-func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServerAddress string) error {
+func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServerAddress string) error {
 	switch v := metricsVal.(type) {
 	case entity.GaugeType:
 		_ = v // for go vet
@@ -110,7 +110,7 @@ func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServer
 }
 
 // send data
-func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
+func httpReq(restClient *resty.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
 
 	// payload, err := json.Marshal(metrics)
 	// if err != nil {
@@ -119,7 +119,7 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 
 	//log.Info("Send: " + string(payload))
 
-	_, err := resty.New().R().
+	_, err := restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(metrics).
 		Post(fmt.Sprintf("%s/update/", httpServerAddress))
