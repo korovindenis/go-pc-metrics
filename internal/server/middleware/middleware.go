@@ -23,14 +23,14 @@ func CheckMethod() gin.HandlerFunc {
 		if strings.ToLower(contentEncoding) == "gzip" {
 			reader, err := gzip.NewReader(c.Request.Body)
 			if err != nil {
-				c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
+				c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 				return
 			}
 			defer reader.Close()
 
 			var buf strings.Builder
 			if _, err := io.Copy(&buf, reader); err != nil {
-				c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
+				c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 				return
 			}
 
