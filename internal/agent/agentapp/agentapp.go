@@ -123,9 +123,10 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 
 	//HTTP POST request
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/update/", httpServerAddress), bytes.NewBuffer(payload))
+	req.Close = true
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Length", strconv.Itoa(len(payload)))
-	req.Close = true
 	if err != nil {
 		return err
 	}
