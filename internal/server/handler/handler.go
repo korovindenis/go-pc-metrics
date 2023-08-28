@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -35,7 +37,18 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 
 	if c.Param("metricType") == "" {
 		// get metric from body
-		if err := c.ShouldBindJSON(&metrics); err != nil {
+		// if err := c.ShouldBindJSON(&metrics); err != nil {
+		// 	c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+		// 	return
+		// }
+
+		// Чтение тела запроса в байтовый буфер
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(c.Request.Body)
+
+		// Декодирование данных из байтового буфера в структуру
+		err := json.Unmarshal(buf.Bytes(), &metrics)
+		if err != nil {
 			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 			return
 		}
