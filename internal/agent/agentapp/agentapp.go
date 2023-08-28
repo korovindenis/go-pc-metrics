@@ -117,7 +117,7 @@ func httpReq(restClient *resty.Client, log logger, httpServerAddress string, met
 	// 	return err
 	// }
 
-	//log.Info("Send: " + string(payload))
+	log.Info("Send: " + fmt.Sprintf("%+v", metrics))
 
 	_, err := restClient.R().
 		SetHeader("Content-Type", "application/json").
