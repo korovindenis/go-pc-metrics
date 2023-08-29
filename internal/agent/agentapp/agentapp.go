@@ -35,6 +35,7 @@ type config interface {
 func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 	restClient := resty.New()
 	restClient.SetTimeout(time.Second * 10)
+	restClient.SetDebug(true)
 
 	httpServerAddress := cfg.GetServerAddressWithScheme()
 
