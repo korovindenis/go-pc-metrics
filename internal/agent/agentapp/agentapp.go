@@ -126,9 +126,9 @@ func httpReq(restClient *resty.Client, log logger, httpServerAddress string, met
 
 	//HTTP POST request
 	// req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/update/", httpServerAddress), bytes.NewBuffer(payload))
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 	// req.Close = true
 
 	// req.Header.Set("Content-Type", "application/json")
