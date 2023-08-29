@@ -119,7 +119,7 @@ func httpReq(restClient *resty.Client, log logger, httpServerAddress string, met
 
 	log.Info("Send: " + fmt.Sprintf("%+v", metrics))
 
-	_, err := restClient.R().
+	restClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(metrics).
 		Post(fmt.Sprintf("%s/update/", httpServerAddress))
