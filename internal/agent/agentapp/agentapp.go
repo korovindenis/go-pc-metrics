@@ -1,6 +1,7 @@
 package agentapp
 
 import (
+	_ "encoding/json"
 	"errors"
 	"fmt"
 	"time"
