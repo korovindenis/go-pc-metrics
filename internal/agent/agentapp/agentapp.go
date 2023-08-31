@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	_ "encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -113,6 +114,7 @@ func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServer
 
 // send data
 func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
+
 	// Create a buffer to hold the request body
 	var requestBody bytes.Buffer
 

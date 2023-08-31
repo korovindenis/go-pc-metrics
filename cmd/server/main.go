@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/korovindenis/go-pc-metrics/internal/adapter/config"
-	storage "github.com/korovindenis/go-pc-metrics/internal/adapter/storage/disk"
+	"github.com/korovindenis/go-pc-metrics/internal/adapters/config"
+	storage "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/disk"
 	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/server"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	serverhandler "github.com/korovindenis/go-pc-metrics/internal/server/handler"
@@ -55,7 +55,7 @@ func main() {
 	}
 
 	// run web server
-	if err := serverapp.Exec(cfg, serverHandler); err != nil {
+	if err := serverapp.Exec(cfg, serverHandler, storage, logger.Log); err != nil {
 		logger.Log.Error("run web server", zap.Error(err))
 		os.Exit(ExitWithError)
 	}

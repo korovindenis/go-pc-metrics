@@ -8,7 +8,10 @@ type Storage struct {
 	entity.MetricsType
 }
 
-func New() (*Storage, error) {
+type cfg interface {
+}
+
+func New(config cfg) (*Storage, error) {
 	storage := &Storage{}
 	storage.MetricsType.Gauge = make(map[string]float64)
 	storage.MetricsType.Counter = make(map[string]int64)
@@ -50,4 +53,8 @@ func (m *Storage) GetAllData() (entity.MetricsType, error) {
 		Gauge:   m.MetricsType.Gauge,
 		Counter: m.MetricsType.Counter,
 	}, nil
+}
+
+func (m *Storage) SaveAllData() error {
+	return nil
 }

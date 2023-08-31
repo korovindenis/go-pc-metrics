@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/korovindenis/go-pc-metrics/internal/adapter/config"
+	"github.com/korovindenis/go-pc-metrics/internal/adapters/config"
 	agent "github.com/korovindenis/go-pc-metrics/internal/agent/agentapp"
 	agentUsecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/agent"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
