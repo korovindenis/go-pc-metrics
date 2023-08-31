@@ -34,10 +34,9 @@ func New(config cfg) (*Storage, error) {
 
 	if storage.isRestore {
 		metrics, err := storage.loadFromFile()
-		if err != nil {
-			return nil, err
+		if err == nil {
+			storage.metrics = metrics
 		}
-		storage.metrics = metrics
 	}
 
 	return storage, nil
