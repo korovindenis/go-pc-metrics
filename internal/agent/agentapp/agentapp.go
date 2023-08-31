@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	_ "encoding/json"
 	"errors"
 	"fmt"
 	"net/http"

@@ -65,11 +65,8 @@ func saveAllData(cfg config, storage storage, log log) {
 	sendTicker := time.NewTicker(cfg.GetStoreInterval())
 	defer sendTicker.Stop()
 
-	for {
-		select {
-		case <-sendTicker.C:
-			log.Info("save to file")
-			storage.SaveAllData()
-		}
+	for range sendTicker.C {
+		log.Info("save to file")
+		storage.SaveAllData()
 	}
 }
