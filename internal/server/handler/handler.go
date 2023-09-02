@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -37,7 +38,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		// get metric from body
 		if err := c.ShouldBindJSON(&metrics); err != nil {
 			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
-			return
+			fmt.Errorf("ReceptionMetrics ShouldBindJSON: %s", err)
+			//return
 		}
 	} else {
 		// get metric from url
@@ -49,7 +51,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 			metricVal, err := strconv.ParseInt(c.Param("metricVal"), 10, 64)
 			if err != nil {
 				c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
-				return
+				fmt.Errorf("ReceptionMetrics ParseInt0: %s", err)
+				//return
 			}
 
 			metrics.Delta = &metricVal
@@ -58,7 +61,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 			metricVal, err := strconv.ParseFloat(c.Param("metricVal"), 64)
 			if err != nil {
 				c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
-				return
+				fmt.Errorf("ReceptionMetrics ParseFloat0: %s", err)
+				//return
 			}
 
 			metrics.Value = &metricVal
@@ -68,7 +72,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	// validate metrics
 	if metrics.ID == "" || metrics.MType == "" {
 		c.AbortWithError(http.StatusNotFound, entity.ErrInvalidURLFormat)
-		return
+		fmt.Errorf("ReceptionMetrics metric is empty")
+		//return
 	}
 
 	// run usecases
@@ -77,7 +82,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		// save metric
 		if err := s.serverUsecase.SaveGaugeUsecase(metrics.ID, *metrics.Value); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
-			return
+			fmt.Errorf("ReceptionMetrics SaveGaugeUsecase: %s", err)
+			//return
 		}
 
 		// show actual metrics
@@ -85,14 +91,16 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		metrics.Value = &gaugeVal
 		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
-			return
+			fmt.Errorf("ReceptionMetrics metricType is empty")
+			//return
 		}
 		c.Status(http.StatusOK)
 	case "counter":
 		// save metric
 		if err := s.serverUsecase.SaveCounterUsecase(metrics.ID, *metrics.Delta); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
-			return
+			fmt.Errorf("ReceptionMetrics SaveCounterUsecase: %s", err)
+			//return
 		}
 
 		// show actual metrics
@@ -100,7 +108,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		metrics.Delta = &counterVal
 		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
-			return
+			fmt.Errorf("ReceptionMetrics GetCounterUsecase")
+			//return
 		}
 		c.Status(http.StatusOK)
 	default:
