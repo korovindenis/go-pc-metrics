@@ -139,12 +139,17 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	//if err != nil {
 	//return fmt.Errorf("httpReq NewRequest: %s", err)
 	//}
-	restClient2 := &http.Client{}
-	resp, _ := restClient2.Do(req)
+	resp, _ := restClient.Do(req)
 	//if err != nil {
 	//return fmt.Errorf("httpReq restClient: %s", err)
 	//}
 	defer resp.Body.Close()
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered. Error:\n", r)
+		}
+	}()
 
 	return nil
 }
