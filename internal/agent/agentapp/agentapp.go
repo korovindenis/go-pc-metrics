@@ -51,28 +51,28 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 		case <-updateTicker.C:
 			log.Info("update metrics")
 			if err := agentUsecase.UpdateGauge(); err != nil {
-				return err
+				return fmt.Errorf("agentapp Exec UpdateGauge: %s", err)
 			}
 			if err := agentUsecase.UpdateCounter(); err != nil {
-				return err
+				return fmt.Errorf("agentapp Exec UpdateCounter: %s", err)
 			}
 		case <-sendTicker.C:
 			log.Info("send metrics")
 			gaugeVal, err := agentUsecase.GetGauge()
 			if err != nil {
-				return err
+				return fmt.Errorf("agentapp Exec GetGauge: %s", err)
 			}
 			err = sendMetrics(restClient, gaugeVal, log, httpServerAddress)
 			if err != nil {
-				return err
+				return fmt.Errorf("agentapp Exec sendMetrics: %s", err)
 			}
 			counterVal, err := agentUsecase.GetCounter()
 			if err != nil {
-				return err
+				return fmt.Errorf("agentapp Exec GetCounter: %s", err)
 			}
 			err = sendMetrics(restClient, counterVal, log, httpServerAddress)
 			if err != nil {
-				return err
+				return fmt.Errorf("agentapp Exec sendMetrics: %s", err)
 			}
 		}
 	}
@@ -90,7 +90,7 @@ func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServer
 				Value: &value,
 			}
 			if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
-				return err
+				return fmt.Errorf("sendMetrics entity.GaugeType: %s", err)
 			}
 		}
 	case entity.CounterType:
@@ -101,7 +101,7 @@ func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServer
 				Delta: &value,
 			}
 			if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
-				return err
+				return fmt.Errorf("sendMetrics entity.CounterType: %s", err)
 			}
 		}
 	default:
@@ -122,7 +122,7 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 
 	payload, err := json.Marshal(metrics)
 	if err != nil {
-		return err
+		return fmt.Errorf("httpReq json.Marshal: %s", err)
 	}
 
 	gz.Write(payload)
@@ -137,12 +137,12 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	req.Header.Set("Accept-Encoding", "gzip")
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
-		return err
+		return fmt.Errorf("httpReq NewRequest: %s", err)
 	}
 
 	resp, err := restClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("httpReq restClient: %s", err)
 	}
 	defer resp.Body.Close()
 
