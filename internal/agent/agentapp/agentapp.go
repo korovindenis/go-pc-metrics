@@ -130,18 +130,19 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 
 	log.Info("Send: " + string(payload))
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered. Error:\n", r)
-		}
-	}()
-
 	//HTTP POST request
 	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/update/", httpServerAddress), &requestBody)
 	// Set the header
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Accept-Encoding", "gzip")
 	req.Header.Set("Content-Type", "application/json")
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered. Error:\n", r)
+		}
+	}()
+
 	//if err != nil {
 	//return fmt.Errorf("httpReq NewRequest: %s", err)
 	//}
