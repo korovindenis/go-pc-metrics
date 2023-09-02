@@ -3,6 +3,7 @@ package serverapp
 import (
 	"time"
 
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/server/middleware"
@@ -44,7 +45,7 @@ func Exec(cfg config, handler serverHandler, storage storage, log log) error {
 	router.Use(logger.RequestLogger())
 	router.Use(middleware.CheckMethod())
 	//router.Use(gin.Recovery())
-	//router.Use(gzip.Gzip(gzip.DefaultCompression))
+	router.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	// routes
 	router.GET("/", handler.OutputAllMetrics)

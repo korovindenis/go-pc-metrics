@@ -135,7 +135,7 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	// Set the header
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Accept-Encoding", "gzip")
-	req.Header.Set("Content-Type", "application/json")
+	//req.Header.Set("Content-Type", "application/json")
 
 	defer func() {
 		if r := recover(); r != nil {

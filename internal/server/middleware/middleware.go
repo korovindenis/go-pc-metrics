@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -18,11 +19,11 @@ func CheckMethod() gin.HandlerFunc {
 			c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
 			return
 		}
-
 		contentEncoding := c.GetHeader("Content-Encoding")
 		if strings.ToLower(contentEncoding) == "gzip" {
 			reader, err := gzip.NewReader(c.Request.Body)
 			if err != nil {
+				fmt.Println(err)
 				c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 				return
 			}
@@ -35,24 +36,7 @@ func CheckMethod() gin.HandlerFunc {
 			}
 
 			c.Request.Body = io.NopCloser(strings.NewReader(buf.String()))
-
-			// body, err := ioutil.ReadAll(c.Request.Body)
-			// if err != nil {
-			// 	c.JSON(500, gin.H{"error": "Ошибка чтения тела запроса"})
-			// 	return
-			// }
-			// fmt.Printf("Содержимое запроса: %s\n", string(body))
-
-		} else {
-			// body, err := ioutil.ReadAll(c.Request.Body)
-			// if err != nil {
-			// 	c.JSON(500, gin.H{"error": "Ошибка чтения тела запроса"})
-			// 	return
-			// }
-			// fmt.Printf("Содержимое запроса: %s\n", string(body))
-
 		}
-
 		c.Next()
 	}
 }
