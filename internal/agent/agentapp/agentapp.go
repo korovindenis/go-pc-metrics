@@ -146,6 +146,7 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	//if err != nil {
 	//return fmt.Errorf("httpReq NewRequest: %s", err)
 	//}
+	restClient = &http.Client{}
 	resp, _ := restClient.Do(req)
 	//if err != nil {
 	//return fmt.Errorf("httpReq restClient: %s", err)
