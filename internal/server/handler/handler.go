@@ -46,7 +46,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	defer zl.Sync()
 	Logg = zl
 
-	if c.Request.Method == http.MethodPost {
+	if c.GetHeader("Content-Encoding") == "application/json" {
 		// get metric from body
 		// if err := c.ShouldBindJSON(&metrics); err != nil {
 		// 	c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
