@@ -19,7 +19,6 @@ func New() (*Agent, error) {
 			Counter: make(map[string]int64, 1),
 		},
 	}
-	runtime.ReadMemStats(&agentUsecase.runtime)
 
 	return agentUsecase, nil
 }
@@ -31,26 +30,27 @@ func (a *Agent) UpdateCounter() error {
 }
 
 func (a *Agent) UpdateGauge() error {
+	runtime.ReadMemStats(&a.runtime)
 
 	a.metrics.Gauge = entity.GaugeType{
-		"Alloc":         rand.Float64(), //float64(a.runtime.Alloc),
+		"Alloc":         float64(a.runtime.Alloc),
 		"BuckHashSys":   float64(a.runtime.BuckHashSys),
-		"Frees":         rand.Float64(), //float64(a.runtime.Frees),
+		"Frees":         float64(a.runtime.Frees),
 		"GCCPUFraction": a.runtime.GCCPUFraction,
 		"GCSys":         float64(a.runtime.GCSys),
-		"HeapAlloc":     rand.Float64(), //float64(a.runtime.HeapAlloc),
-		"HeapIdle":      rand.Float64(), //float64(a.runtime.HeapIdle),
-		"HeapInuse":     rand.Float64(), //float64(a.runtime.HeapInuse),
-		"HeapObjects":   rand.Float64(), //float64(a.runtime.HeapObjects),
+		"HeapAlloc":     float64(a.runtime.HeapAlloc),
+		"HeapIdle":      float64(a.runtime.HeapIdle),
+		"HeapInuse":     float64(a.runtime.HeapInuse),
+		"HeapObjects":   float64(a.runtime.HeapObjects),
 		"HeapReleased":  float64(a.runtime.HeapReleased),
 		"HeapSys":       float64(a.runtime.HeapSys),
 		"LastGC":        float64(a.runtime.LastGC),
 		"Lookups":       float64(a.runtime.Lookups),
-		"MCacheSys":     rand.Float64(), //float64(a.runtime.MCacheSys),
-		"MSpanInuse":    rand.Float64(), //float64(a.runtime.MSpanInuse),
-		"MCacheInuse":   rand.Float64(), //float64(a.runtime.MSpanInuse),
+		"MCacheSys":     float64(a.runtime.MCacheSys),
+		"MSpanInuse":    float64(a.runtime.MSpanInuse),
+		"MCacheInuse":   float64(a.runtime.MSpanInuse),
 		"MSpanSys":      float64(a.runtime.MSpanSys),
-		"Mallocs":       rand.Float64(), // float64(a.runtime.Mallocs),
+		"Mallocs":       float64(a.runtime.Mallocs),
 		"NextGC":        float64(a.runtime.NextGC),
 		"NumForcedGC":   float64(a.runtime.NumForcedGC),
 		"NumGC":         float64(a.runtime.NumGC),
@@ -59,7 +59,7 @@ func (a *Agent) UpdateGauge() error {
 		"StackInuse":    float64(a.runtime.StackInuse),
 		"StackSys":      float64(a.runtime.StackSys),
 		"Sys":           float64(a.runtime.Sys),
-		"TotalAlloc":    rand.Float64(), // float64(a.runtime.TotalAlloc),
+		"TotalAlloc":    float64(a.runtime.TotalAlloc),
 		"RandomValue":   rand.Float64(),
 	}
 
