@@ -48,6 +48,7 @@ func (a *Agent) UpdateGauge() error {
 		"Lookups":       float64(a.runtime.Lookups),
 		"MCacheSys":     rand.Float64(), //float64(a.runtime.MCacheSys),
 		"MSpanInuse":    rand.Float64(), //float64(a.runtime.MSpanInuse),
+		"MCacheInuse":   rand.Float64(), //float64(a.runtime.MSpanInuse),
 		"MSpanSys":      float64(a.runtime.MSpanSys),
 		"Mallocs":       rand.Float64(), // float64(a.runtime.Mallocs),
 		"NextGC":        float64(a.runtime.NextGC),
