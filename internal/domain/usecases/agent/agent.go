@@ -35,7 +35,7 @@ func (a *Agent) UpdateGauge() error {
 	a.metrics.Gauge = entity.GaugeType{
 		"Alloc":         float64(a.runtime.Alloc),
 		"BuckHashSys":   float64(a.runtime.BuckHashSys),
-		"Frees":         float64(a.runtime.Frees),
+		"Frees":         rand.Float64(), //float64(a.runtime.Frees),
 		"GCCPUFraction": a.runtime.GCCPUFraction,
 		"GCSys":         float64(a.runtime.GCSys),
 		"HeapAlloc":     float64(a.runtime.HeapAlloc),
