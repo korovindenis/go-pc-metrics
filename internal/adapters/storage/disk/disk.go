@@ -32,12 +32,12 @@ func New(config cfg) (*Storage, error) {
 		return nil, err
 	}
 
-	if storage.isRestore {
-		metrics, err := storage.loadFromFile()
-		if err == nil {
-			storage.metrics = metrics
-		}
-	}
+	// if storage.isRestore {
+	// 	metrics, err := storage.loadFromFile()
+	// 	if err == nil {
+	// 		storage.metrics = metrics
+	// 	}
+	// }
 
 	return storage, nil
 }

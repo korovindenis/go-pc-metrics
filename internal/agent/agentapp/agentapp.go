@@ -151,14 +151,12 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	// // }
 	// // defer resp.Body.Close()
 
-	// Преобразование структуры Metrics в JSON
 	jsonData, err := json.Marshal(metrics)
 	if err != nil {
 		fmt.Println("Ошибка при маршалинге JSON:", err)
 		return err
 	}
 
-	// Создание запроса HTTP
 	req, err := http.NewRequest("POST", httpServerAddress+"/update/", bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println("Ошибка при создании запроса HTTP:", err)
@@ -166,7 +164,6 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	// Отправка запроса
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -175,7 +172,6 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	}
 	defer resp.Body.Close()
 
-	// Обработка ответа (если необходимо)
 	fmt.Println("Статус код ответа:", resp.Status)
 
 	return nil

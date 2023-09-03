@@ -54,7 +54,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		// 	return
 		// }
 
-		// Создайте буфер для хранения содержимого тела запроса
+		//  буфер для хранения содержимого тела запроса
 		var requestBodyBuffer bytes.Buffer
 		_, err := io.Copy(&requestBodyBuffer, c.Request.Body)
 		if err != nil {
@@ -62,20 +62,15 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 			return
 		}
 
-		// Отобразите содержимое буфера (как строку)
+		//  содержимое буфера
 		requestBody := requestBodyBuffer.String()
 		Logg.Info(requestBody)
 
-		// Теперь вы можете использовать requestBody по вашему усмотрению
-		// ...
-
-		// Восстанавливаем тело запроса, чтобы оно было доступно для дальнейшей обработки
 		c.Request.Body = ioutil.NopCloser(bytes.NewBufferString(requestBody))
 
-		// Создайте декодер JSON
+		//  декодер JSON
 		decoder := json.NewDecoder(c.Request.Body)
 
-		// Размещение данных в структуре Metrics
 		if err := decoder.Decode(&metrics); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON Format"})
 			return
