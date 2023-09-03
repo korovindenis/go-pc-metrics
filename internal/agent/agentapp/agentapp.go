@@ -1,13 +1,12 @@
 package agentapp
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	"go.uber.org/zap/zapcore"
 )
@@ -151,28 +150,41 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	// // }
 	// // defer resp.Body.Close()
 
-	jsonData, err := json.Marshal(metrics)
-	if err != nil {
-		fmt.Println("Ошибка при маршалинге JSON:", err)
-		return err
-	}
+	// new logic
+	// jsonData, err := json.Marshal(metrics)
+	// if err != nil {
+	// 	fmt.Println("Ошибка при маршалинге JSON:", err)
+	// 	return err
+	// }
 
-	req, err := http.NewRequest("POST", httpServerAddress+"/update/", bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Println("Ошибка при создании запроса HTTP:", err)
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
+	// req, err := http.NewRequest("POST", httpServerAddress+"/update/", bytes.NewBuffer(jsonData))
+	// if err != nil {
+	// 	fmt.Println("Ошибка при создании запроса HTTP:", err)
+	// 	return err
+	// }
+	// req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Ошибка при отправке запроса:"+string(jsonData), err)
-		return err
-	}
-	defer resp.Body.Close()
+	// client := &http.Client{}
+	// resp, err := client.Do(req)
+	// if err != nil {
+	// 	fmt.Println("Ошибка при отправке запроса:"+string(jsonData), err)
+	// 	return err
+	// }
+	// defer resp.Body.Close()
 
-	fmt.Println("Статус код ответа:", resp.Status)
+	// fmt.Println("Статус код ответа:", resp.Status)
+
+	// resty
+	response, err := resty.New().SetDebug(true).R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(&metrics).
+		Post(httpServerAddress + "/update/")
+
+	if err != nil {
+		fmt.Println("Ошибка при отправке запроса:", err)
+	}
+	fmt.Println("Код ответа:", response.Status())
+	fmt.Println("Тело ответа:", response.String())
 
 	return nil
 }
