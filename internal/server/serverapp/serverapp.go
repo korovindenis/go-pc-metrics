@@ -47,10 +47,10 @@ func Exec(cfg config, handler serverHandler, storage storage, log log) error {
 	//router.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	// routes
-	//router.GET("/", handler.OutputAllMetrics)
-	//router.GET("/value/:metricType/:metricName", handler.OutputMetric)
+	router.GET("/", handler.OutputAllMetrics)
+	router.GET("/value/:metricType/:metricName", handler.OutputMetric)
 	router.POST("/value/", handler.OutputMetric)
-	//router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetrics)
+	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetrics)
 	router.POST("/update/", handler.ReceptionMetrics)
 
 	// save data to disk
