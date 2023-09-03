@@ -159,7 +159,7 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	}
 
 	// Создание запроса HTTP
-	req, err := http.NewRequest("POST", httpServerAddress, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", httpServerAddress+"/update/", bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println("Ошибка при создании запроса HTTP:", err)
 		return err
