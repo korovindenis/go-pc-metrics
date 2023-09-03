@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -75,6 +76,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON Format"})
 			return
 		}
+		rnd := rand.Float64()
+		metrics.Value = &rnd
 
 	} else {
 		// get metric from url

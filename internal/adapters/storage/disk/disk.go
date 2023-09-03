@@ -2,7 +2,6 @@ package disk
 
 import (
 	"encoding/json"
-	"math/rand"
 	"os"
 
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
@@ -48,7 +47,7 @@ func (s *Storage) SaveAllData() error {
 }
 
 func (s *Storage) SaveGauge(gaugeName string, gaugeValue float64) error {
-	s.metrics.Gauge[gaugeName] = rand.Float64() //gaugeValue
+	s.metrics.Gauge[gaugeName] = gaugeValue
 	return s.saveToFile()
 }
 
