@@ -6,7 +6,7 @@ import (
 
 	"github.com/korovindenis/go-pc-metrics/internal/adapters/config"
 	storage "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/disk"
-	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/server"
+	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecases/server"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	serverhandler "github.com/korovindenis/go-pc-metrics/internal/server/handler"
 	serverapp "github.com/korovindenis/go-pc-metrics/internal/server/serverapp"

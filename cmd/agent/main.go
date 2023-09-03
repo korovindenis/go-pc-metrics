@@ -6,7 +6,7 @@ import (
 
 	"github.com/korovindenis/go-pc-metrics/internal/adapters/config"
 	agent "github.com/korovindenis/go-pc-metrics/internal/agent/agentapp"
-	agentUsecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecase/agent"
+	agentUsecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecases/agent"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"go.uber.org/zap"
 )

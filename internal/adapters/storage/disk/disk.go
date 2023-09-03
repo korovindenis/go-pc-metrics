@@ -47,21 +47,11 @@ func (s *Storage) SaveAllData() error {
 }
 
 func (s *Storage) SaveGauge(gaugeName string, gaugeValue float64) error {
-	// metrics, err := s.loadFromFile()
-	// if err != nil {
-	// 	return err
-	// }
-
 	s.metrics.Gauge[gaugeName] = gaugeValue
 	return s.saveToFile()
 }
 
 func (s *Storage) GetGauge(gaugeName string) (float64, error) {
-	// metrics, err := s.loadFromFile()
-	// if err != nil {
-	// 	return 0, err
-	// }
-
 	val, ok := s.metrics.Gauge[gaugeName]
 	if !ok {
 		return val, entity.ErrMetricNotFound
