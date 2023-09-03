@@ -1,13 +1,17 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
-	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"go.uber.org/zap"
 )
 
 // function usecase
@@ -33,14 +37,50 @@ func New(u usecase) (*Handler, error) {
 
 func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	var metrics entity.Metrics
+	var Logg *zap.Logger
+	Logg = zap.NewNop()
+	lvl, _ := zap.ParseAtomicLevel("info")
+	cfg := zap.NewProductionConfig()
+	cfg.Level = lvl
+	zl, _ := cfg.Build()
+	defer zl.Sync()
+	Logg = zl
 
 	if c.Param("metricType") == "" {
 		// get metric from body
-		if err := c.ShouldBindJSON(&metrics); err != nil {
-			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
-			fmt.Errorf("ReceptionMetrics ShouldBindJSON: %s", err)
-			//return
+		// if err := c.ShouldBindJSON(&metrics); err != nil {
+		// 	c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+		// 	Logg.Info(fmt.Sprintf("%s", err))
+		// 	return
+		// }
+
+		// Создайте буфер для хранения содержимого тела запроса
+		var requestBodyBuffer bytes.Buffer
+		_, err := io.Copy(&requestBodyBuffer, c.Request.Body)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read request body"})
+			return
 		}
+
+		// Отобразите содержимое буфера (как строку)
+		requestBody := requestBodyBuffer.String()
+		Logg.Info(requestBody)
+
+		// Теперь вы можете использовать requestBody по вашему усмотрению
+		// ...
+
+		// Восстанавливаем тело запроса, чтобы оно было доступно для дальнейшей обработки
+		c.Request.Body = ioutil.NopCloser(bytes.NewBufferString(requestBody))
+
+		// Создайте декодер JSON
+		decoder := json.NewDecoder(c.Request.Body)
+
+		// Размещение данных в структуре Metrics
+		if err := decoder.Decode(&metrics); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON Format"})
+			return
+		}
+
 	} else {
 		// get metric from url
 		metrics = entity.Metrics{
@@ -51,8 +91,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 			metricVal, err := strconv.ParseInt(c.Param("metricVal"), 10, 64)
 			if err != nil {
 				c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
-				fmt.Errorf("ReceptionMetrics ParseInt0: %s", err)
-				//return
+				return
 			}
 
 			metrics.Delta = &metricVal
@@ -61,8 +100,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 			metricVal, err := strconv.ParseFloat(c.Param("metricVal"), 64)
 			if err != nil {
 				c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
-				fmt.Errorf("ReceptionMetrics ParseFloat0: %s", err)
-				//return
+				return
 			}
 
 			metrics.Value = &metricVal
@@ -72,8 +110,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	// validate metrics
 	if metrics.ID == "" || metrics.MType == "" {
 		c.AbortWithError(http.StatusNotFound, entity.ErrInvalidURLFormat)
-		fmt.Errorf("ReceptionMetrics metric is empty")
-		//return
+		return
 	}
 
 	// run usecases
@@ -82,8 +119,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		// save metric
 		if err := s.serverUsecase.SaveGaugeUsecase(metrics.ID, *metrics.Value); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
-			fmt.Errorf("ReceptionMetrics SaveGaugeUsecase: %s", err)
-			//return
+			return
 		}
 
 		// show actual metrics
@@ -91,16 +127,14 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		metrics.Value = &gaugeVal
 		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
-			fmt.Errorf("ReceptionMetrics metricType is empty")
-			//return
+			return
 		}
 		c.Status(http.StatusOK)
 	case "counter":
 		// save metric
 		if err := s.serverUsecase.SaveCounterUsecase(metrics.ID, *metrics.Delta); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
-			fmt.Errorf("ReceptionMetrics SaveCounterUsecase: %s", err)
-			//return
+			return
 		}
 
 		// show actual metrics
@@ -108,8 +142,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		metrics.Delta = &counterVal
 		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
-			fmt.Errorf("ReceptionMetrics GetCounterUsecase")
-			//return
+			return
 		}
 		c.Status(http.StatusOK)
 	default:
