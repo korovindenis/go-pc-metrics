@@ -175,16 +175,20 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	// fmt.Println("Статус код ответа:", resp.Status)
 
 	// resty
-	response, err := resty.New().SetDebug(true).R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(&metrics).
-		Post(httpServerAddress + "/update/")
+	for {
+		response, err := resty.New().SetDebug(true).R().
+			SetHeader("Content-Type", "application/json").
+			SetBody(&metrics).
+			Post(httpServerAddress + "/update/")
 
-	if err != nil {
-		fmt.Println("Ошибка при отправке запроса:", err)
+		if err == nil {
+			break
+		} else {
+			fmt.Println("Ошибка при отправке запроса:", err)
+		}
+		fmt.Println("Код ответа:", response.Status())
+		fmt.Println("Тело ответа:", response.String())
 	}
-	fmt.Println("Код ответа:", response.Status())
-	fmt.Println("Тело ответа:", response.String())
 
 	return nil
 }

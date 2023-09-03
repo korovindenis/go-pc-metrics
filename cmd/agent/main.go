@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/korovindenis/go-pc-metrics/internal/adapters/config"
 	agent "github.com/korovindenis/go-pc-metrics/internal/agent/agentapp"
@@ -19,13 +17,6 @@ const (
 )
 
 func main() {
-	fmt.Println("Начало программы")
-
-	duration := 12 * time.Second
-	time.Sleep(duration)
-
-	fmt.Println("Прошло 12 секунд")
-
 	// init config (flags and env)
 	cfg, err := config.New(false)
 	if err != nil {
