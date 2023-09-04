@@ -131,10 +131,10 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	log.Info("Send: " + string(payload))
 
 	//HTTP POST request
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/update/", httpServerAddress), &requestBody)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/update/", httpServerAddress), bytes.NewBuffer(payload)) //&requestBody)
 	// Set the header
-	req.Header.Set("Content-Encoding", "gzip")
-	req.Header.Set("Accept-Encoding", "gzip")
+	//req.Header.Set("Content-Encoding", "gzip")
+	//req.Header.Set("Accept-Encoding", "gzip")
 	req.Header.Set("Content-Type", "application/json")
 
 	if err != nil {
