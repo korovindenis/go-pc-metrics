@@ -3,6 +3,7 @@ package disk
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 )
@@ -27,17 +28,23 @@ func New(config cfg) (*Storage, error) {
 			Counter: make(entity.CounterType),
 		},
 	}
-
-	if _, err := os.OpenFile(storage.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
+	// create dir
+	if err := os.MkdirAll(filepath.Dir(storage.filePath), 0770); err != nil {
 		return nil, err
 	}
+	// open file
+	file, err := os.OpenFile(storage.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
 
-	// if storage.isRestore {
-	// 	metrics, err := storage.loadFromFile()
-	// 	if err == nil {
-	// 		storage.metrics = metrics
-	// 	}
-	// }
+	if storage.isRestore {
+		metrics, err := storage.loadFromFile()
+		if err == nil {
+			storage.metrics = metrics
+		}
+	}
 
 	return storage, nil
 }
@@ -60,21 +67,11 @@ func (s *Storage) GetGauge(gaugeName string) (float64, error) {
 }
 
 func (s *Storage) SaveCounter(counterName string, counterValue int64) error {
-	// metrics, err := s.loadFromFile()
-	// if err != nil {
-	// 	return err
-	// }
-
 	s.metrics.Counter[counterName] = counterValue
 	return s.saveToFile()
 }
 
 func (s *Storage) GetCounter(counterName string) (int64, error) {
-	// metrics, err := s.loadFromFile()
-	// if err != nil {
-	// 	return 0, err
-	// }
-
 	val, ok := s.metrics.Counter[counterName]
 	if !ok {
 		return val, entity.ErrMetricNotFound

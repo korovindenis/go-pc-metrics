@@ -33,7 +33,7 @@ func New(isServer bool) (*configAdapter, error) {
 	// server
 	if isServer {
 		rootCmd.Flags().IntVarP(&adapter.storeInterval, "store_interval", "i", 300, "Interval for save data to disk")
-		rootCmd.Flags().StringVarP(&adapter.fileStoragePath, "file_storage_path", "f", "metrics-db.json", "Log file path")
+		rootCmd.Flags().StringVarP(&adapter.fileStoragePath, "file_storage_path", "f", "./tmp/metrics-db.json", "Log file path")
 		rootCmd.Flags().BoolVarP(&adapter.restore, "restore", "r", true, "Load prev. data from file")
 	} else {
 		// agent
