@@ -1,10 +1,7 @@
 package middleware
 
 import (
-	"compress/gzip"
-	"io"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
@@ -18,23 +15,23 @@ func CheckMethod() gin.HandlerFunc {
 			c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
 			return
 		}
-		contentEncoding := c.GetHeader("Content-Encoding")
-		if strings.ToLower(contentEncoding) == "gzip" {
-			reader, err := gzip.NewReader(c.Request.Body)
-			if err != nil {
-				c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
-				return
-			}
-			defer reader.Close()
+		// contentEncoding := c.GetHeader("Content-Encoding")
+		// if strings.ToLower(contentEncoding) == "gzip" {
+		// 	reader, err := gzip.NewReader(c.Request.Body)
+		// 	if err != nil {
+		// 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+		// 		return
+		// 	}
+		// 	defer reader.Close()
 
-			var buf strings.Builder
-			if _, err := io.Copy(&buf, reader); err != nil {
-				c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
-				return
-			}
+		// 	var buf strings.Builder
+		// 	if _, err := io.Copy(&buf, reader); err != nil {
+		// 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+		// 		return
+		// 	}
 
-			c.Request.Body = io.NopCloser(strings.NewReader(buf.String()))
-		}
+		// 	c.Request.Body = io.NopCloser(strings.NewReader(buf.String()))
+		// }
 		c.Next()
 	}
 }
