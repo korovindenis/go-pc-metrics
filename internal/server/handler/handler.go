@@ -1,17 +1,12 @@
 package handler
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
-	"go.uber.org/zap"
 )
 
 // function usecase
@@ -37,45 +32,13 @@ func New(u usecase) (*Handler, error) {
 
 func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	var metrics entity.Metrics
-	var Logg *zap.Logger
-	Logg = zap.NewNop()
-	lvl, _ := zap.ParseAtomicLevel("info")
-	cfg := zap.NewProductionConfig()
-	cfg.Level = lvl
-	zl, _ := cfg.Build()
-	defer zl.Sync()
-	Logg = zl
 
 	if c.GetHeader("Content-Type") == "application/json" {
 		// get metric from body
-		// if err := c.ShouldBindJSON(&metrics); err != nil {
-		// 	c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
-		// 	Logg.Info(fmt.Sprintf("%s", err))
-		// 	return
-		// }
-
-		//  буфер для хранения содержимого тела запроса
-		var requestBodyBuffer bytes.Buffer
-		_, err := io.Copy(&requestBodyBuffer, c.Request.Body)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read request body"})
+		if err := c.ShouldBindJSON(&metrics); err != nil {
+			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 			return
 		}
-
-		//  содержимое буфера
-		requestBody := requestBodyBuffer.String()
-		Logg.Info(requestBody)
-
-		c.Request.Body = ioutil.NopCloser(bytes.NewBufferString(requestBody))
-
-		//  декодер JSON
-		decoder := json.NewDecoder(c.Request.Body)
-
-		if err := decoder.Decode(&metrics); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON Format"})
-			return
-		}
-
 	} else {
 		// get metric from url
 		metrics = entity.Metrics{
