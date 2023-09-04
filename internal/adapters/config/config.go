@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -96,7 +95,7 @@ func (f *configAdapter) GetStoreInterval() time.Duration {
 }
 
 func (f *configAdapter) GetFileStoragePath() string {
-	return filepath.Join(os.TempDir(), f.fileStoragePath)
+	return f.fileStoragePath //filepath.Join(os.TempDir(), f.fileStoragePath)
 }
 
 func (f *configAdapter) GetRestore() bool {
