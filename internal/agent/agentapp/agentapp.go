@@ -1,13 +1,12 @@
 package agentapp
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	"go.uber.org/zap/zapcore"
 )
@@ -113,61 +112,81 @@ func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServer
 // send data
 func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
 
-	// //Create a buffer to hold the request body
+	// Create a buffer to hold the request body
 	// var requestBody bytes.Buffer
 
 	// // Compress the request body
-	// gz := gzip.NewWriter(&requestBody)
+	// //gz := gzip.NewWriter(&requestBody)
 
-	// payload, err := json.Marshal(metrics)
-	// if err != nil {
-	// 	return fmt.Errorf("httpReq json.Marshal: %s", err)
-	// }
+	// payload, _ := json.Marshal(metrics)
+	// // if err != nil {
+	// // 	return fmt.Errorf("httpReq json.Marshal: %s", err)
+	// // }
 
-	// gz.Write(payload)
-	// gz.Close()
+	// //gz.Write(payload)
+	// //gz.Close()
 
 	// log.Info("Send: " + string(payload))
 
 	// //HTTP POST request
-	// req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/update/", httpServerAddress), bytes.NewBuffer(payload)) //&requestBody)
+	// req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/update/", httpServerAddress), &requestBody)
 	// // Set the header
 	// //req.Header.Set("Content-Encoding", "gzip")
 	// //req.Header.Set("Accept-Encoding", "gzip")
 	// req.Header.Set("Content-Type", "application/json")
 
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		fmt.Println("Recovered. Error:\n", r)
+	// 	}
+	// }()
+
+	// //if err != nil {
+	// //return fmt.Errorf("httpReq NewRequest: %s", err)
+	// //}
+	// _, _ = restClient.Do(req)
+	// // if err != nil {
+	// // 	return fmt.Errorf("httpReq restClient: %s", err)
+	// // }
+	// // defer resp.Body.Close()
+
+	// new logic
+	// jsonData, err := json.Marshal(metrics)
 	// if err != nil {
-	// 	return fmt.Errorf("httpReq NewRequest: %s", err)
+	// 	fmt.Println("Ошибка при маршалинге JSON:", err)
+	// 	return err
 	// }
-	// resp, err := restClient.Do(req)
+
+	// req, err := http.NewRequest("POST", httpServerAddress+"/update/", bytes.NewBuffer(jsonData))
 	// if err != nil {
-	// 	return fmt.Errorf("httpReq restClient: %s", err)
+	// 	fmt.Println("Ошибка при создании запроса HTTP:", err)
+	// 	return err
+	// }
+	// req.Header.Set("Content-Type", "application/json")
+
+	// client := &http.Client{}
+	// resp, err := client.Do(req)
+	// if err != nil {
+	// 	fmt.Println("Ошибка при отправке запроса:"+string(jsonData), err)
+	// 	return err
 	// }
 	// defer resp.Body.Close()
 
-	// new logic
-	jsonData, err := json.Marshal(metrics)
-	if err != nil {
-		fmt.Println("Ошибка при маршалинге JSON:", err)
-		return err
-	}
+	// fmt.Println("Статус код ответа:", resp.Status)
 
-	req, err := http.NewRequest("POST", httpServerAddress+"/update/", bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Println("Ошибка при создании запроса HTTP:", err)
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
+	// resty
+	response, err := resty.New().SetDebug(true).R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Accept-Encoding", "gzip").
+		SetBody(&metrics).
+		Post(httpServerAddress + "/update/")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Ошибка при отправке запроса:"+string(jsonData), err)
-		return err
+		fmt.Println("Ошибка при отправке запроса:", err)
 	}
-	defer resp.Body.Close()
-
-	fmt.Println("Статус код ответа:", resp.Status)
+	fmt.Println("Код ответа:", response.Status())
+	fmt.Println("Тело ответа:", response.String())
 
 	return nil
 }
