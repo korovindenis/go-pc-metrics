@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -23,7 +22,6 @@ func CheckMethod() gin.HandlerFunc {
 		if strings.ToLower(contentEncoding) == "gzip" {
 			reader, err := gzip.NewReader(c.Request.Body)
 			if err != nil {
-				fmt.Println(err)
 				c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 				return
 			}
