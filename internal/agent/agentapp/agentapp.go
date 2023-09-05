@@ -135,6 +135,7 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
 
 	resp, err := restClient.Do(req)
 	if err != nil {

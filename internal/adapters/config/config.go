@@ -96,9 +96,9 @@ func (f *configAdapter) GetLogsLevel() string {
 }
 
 func (f *configAdapter) GetStoreInterval() time.Duration {
-	if f.storeInterval == 0 {
-		return 1 * time.Second
-	}
+	// if f.storeInterval == 0 {
+	// 	return 1 * time.Second
+	// }
 	return time.Duration(f.storeInterval) * time.Second
 }
 
