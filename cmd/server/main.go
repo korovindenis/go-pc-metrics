@@ -20,7 +20,7 @@ const (
 
 func main() {
 	// init config (flags and env)
-	cfg, err := config.New(true)
+	cfg, err := config.NewServerConfig()
 	if err != nil {
 		log.Println(err)
 		os.Exit(ExitWithError)
@@ -54,8 +54,11 @@ func main() {
 		os.Exit(ExitWithError)
 	}
 
+	// save to file
+	go serverUsecase.SaveAllDataUsecase(cfg)
+
 	// run web server
-	if err := serverapp.Exec(cfg, serverHandler, storage, logger.Log); err != nil {
+	if err := serverapp.Exec(cfg, serverHandler, logger.Log); err != nil {
 		logger.Log.Error("run web server", zap.Error(err))
 		os.Exit(ExitWithError)
 	}

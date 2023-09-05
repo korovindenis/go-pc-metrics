@@ -1,9 +1,6 @@
 package serverapp
 
 import (
-	"time"
-
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/server/middleware"
@@ -18,14 +15,8 @@ type serverHandler interface {
 }
 
 // config functions
-type config interface {
+type cfg interface {
 	GetServerAddress() string
-	GetStoreInterval() time.Duration
-}
-
-// storege functions
-type storage interface {
-	SaveAllData() error
 }
 
 // logger functions
@@ -34,7 +25,7 @@ type log interface {
 }
 
 // server main
-func Exec(cfg config, handler serverHandler, storage storage, log log) error {
+func Exec(cfg cfg, handler serverHandler, log log) error {
 	httpAddress := cfg.GetServerAddress()
 	router := gin.Default()
 
@@ -45,7 +36,7 @@ func Exec(cfg config, handler serverHandler, storage storage, log log) error {
 	router.Use(logger.RequestLogger())
 	router.Use(middleware.CheckMethod())
 	router.Use(gin.Recovery())
-	router.Use(gzip.Gzip(gzip.DefaultCompression))
+	router.Use(middleware.GzipMiddleware())
 
 	// routes
 	router.GET("/", handler.OutputAllMetrics)
@@ -54,19 +45,6 @@ func Exec(cfg config, handler serverHandler, storage storage, log log) error {
 	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetrics)
 	router.POST("/update/", handler.ReceptionMetrics)
 
-	// save data to disk
-	go saveAllData(cfg, storage, log)
-
 	// start server
 	return router.Run(httpAddress)
-}
-
-func saveAllData(cfg config, storage storage, log log) {
-	sendTicker := time.NewTicker(cfg.GetStoreInterval())
-	defer sendTicker.Stop()
-
-	for range sendTicker.C {
-		log.Info("save to file")
-		storage.SaveAllData()
-	}
 }

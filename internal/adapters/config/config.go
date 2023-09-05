@@ -19,7 +19,15 @@ type configAdapter struct {
 	restore         bool
 }
 
-func New(isServer bool) (*configAdapter, error) {
+func NewServerConfig() (*configAdapter, error) {
+	return new(true) // create new config-server
+}
+
+func NewAgentConfig() (*configAdapter, error) {
+	return new(false) // create new config-agent
+}
+
+func new(isServer bool) (*configAdapter, error) {
 	adapter := configAdapter{}
 	rootCmd := &cobra.Command{
 		Use:   "go-pc-metrics",

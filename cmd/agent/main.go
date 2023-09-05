@@ -18,7 +18,7 @@ const (
 
 func main() {
 	// init config (flags and env)
-	cfg, err := config.New(false)
+	cfg, err := config.NewAgentConfig()
 	if err != nil {
 		log.Println(err)
 		os.Exit(ExitWithError)

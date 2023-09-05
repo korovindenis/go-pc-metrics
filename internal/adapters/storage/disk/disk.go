@@ -9,9 +9,8 @@ import (
 )
 
 type Storage struct {
-	isRestore bool
-	filePath  string
-	metrics   entity.MetricsType
+	filePath string
+	metrics  entity.MetricsType
 }
 
 type cfg interface {
@@ -21,8 +20,7 @@ type cfg interface {
 
 func New(config cfg) (*Storage, error) {
 	storage := &Storage{
-		filePath:  config.GetFileStoragePath(),
-		isRestore: config.GetRestore(),
+		filePath: config.GetFileStoragePath(),
 		metrics: entity.MetricsType{
 			Gauge:   make(entity.GaugeType),
 			Counter: make(entity.CounterType),
@@ -39,11 +37,12 @@ func New(config cfg) (*Storage, error) {
 	}
 	defer file.Close()
 
-	if storage.isRestore {
+	if config.GetRestore() {
 		metrics, err := storage.loadFromFile()
-		if err == nil {
-			storage.metrics = metrics
+		if err != nil {
+			return storage, nil
 		}
+		storage.metrics = metrics
 	}
 
 	return storage, nil

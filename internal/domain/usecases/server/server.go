@@ -1,6 +1,10 @@
 package serverusecase
 
-import "github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+import (
+	"time"
+
+	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+)
 
 // storage functions
 type storage interface {
@@ -11,6 +15,12 @@ type storage interface {
 	GetCounter(counterName string) (int64, error)
 
 	GetAllData() (entity.MetricsType, error)
+	SaveAllData() error
+}
+
+type cfg interface {
+	GetServerAddress() string
+	GetStoreInterval() time.Duration
 }
 
 type Server struct {
@@ -47,4 +57,13 @@ func (s *Server) GetCounterUsecase(counterName string) (int64, error) {
 
 func (s *Server) GetAllDataUsecase() (entity.MetricsType, error) {
 	return s.storage.GetAllData()
+}
+
+func (s *Server) SaveAllDataUsecase(cfg cfg) {
+	sendTicker := time.NewTicker(cfg.GetStoreInterval())
+	defer sendTicker.Stop()
+
+	for range sendTicker.C {
+		s.storage.SaveAllData()
+	}
 }
