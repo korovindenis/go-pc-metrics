@@ -1,12 +1,14 @@
 package agentapp
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	"go.uber.org/zap/zapcore"
 )
@@ -111,18 +113,36 @@ func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServer
 
 // send data
 func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
-
-	// resty
-	_, err := resty.New().SetDebug(true).R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Content-Encoding", "gzip").
-		SetHeader("Accept-Encoding", "gzip").
-		SetBody(&metrics).
-		Post(httpServerAddress + "/update/")
-
+	jsonBody, err := json.Marshal(metrics)
 	if err != nil {
-		return fmt.Errorf("err in resty: %s", err)
+		return fmt.Errorf("err in Marshal: %s", err)
 	}
+
+	var compressedBody bytes.Buffer
+	gz := gzip.NewWriter(&compressedBody)
+
+	_, err = gz.Write(jsonBody)
+	if err != nil {
+		return fmt.Errorf("err in gz Write: %s", err)
+	}
+
+	gz.Close()
+
+	req, err := http.NewRequest("POST", httpServerAddress+"/update/", &compressedBody)
+	if err != nil {
+		return fmt.Errorf("err in NewRequest: %s", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+
+	resp, err := restClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("err in httpclient: %s", err)
+	}
+	defer resp.Body.Close()
+
+	log.Info("Status Code:" + resp.Status)
 
 	return nil
 }
