@@ -113,16 +113,16 @@ func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServer
 func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
 
 	// resty
-	resty.New().SetDebug(true).R().
+	_, err := resty.New().SetDebug(true).R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("Accept-Encoding", "gzip").
 		SetBody(&metrics).
 		Post(httpServerAddress + "/update/")
 
-	//if err != nil {
-	//	return fmt.Errorf("err in resty: %s", err)
-	//}
+	if err != nil {
+		return fmt.Errorf("err in resty: %s", err)
+	}
 
 	return nil
 }

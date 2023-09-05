@@ -37,6 +37,7 @@ func Exec(cfg cfg, handler serverHandler, log log) error {
 	router.Use(middleware.CheckMethod())
 	router.Use(gin.Recovery())
 	router.Use(middleware.GzipMiddleware())
+	router.Use(middleware.GzipResponseMiddleware())
 
 	// routes
 	router.GET("/", handler.OutputAllMetrics)

@@ -22,43 +22,44 @@ func CheckMethod() gin.HandlerFunc {
 	}
 }
 
-type gzipResponseWriter struct {
-	gin.ResponseWriter
-	writer *gzip.Writer
-}
+// type gzipResponseWriter struct {
+// 	gin.ResponseWriter
+// 	writer *gzip.Writer
+// }
 
 func GzipMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		acceptEncoding := c.Request.Header.Get("Accept-Encoding")
-		if strings.Contains(acceptEncoding, "gzip") {
-
-			c.Header("Content-Encoding", "gzip")
-
-			writer := gzip.NewWriter(c.Writer)
-			defer writer.Close()
-
-			c.Writer = &gzipResponseWriter{c.Writer, writer}
-
-			c.Next()
-			return
-		}
-
-		contentEncoding := c.GetHeader("Content-Encoding")
-		if strings.Contains(contentEncoding, "gzip") {
+		if strings.Contains(c.GetHeader("Content-Encoding"), "gzip") {
 			reader, err := gzip.NewReader(c.Request.Body)
 			if err != nil {
-				c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Gzip data"})
+				c.Abort()
 				return
 			}
 			defer reader.Close()
+			c.Request.Body = http.MaxBytesReader(c.Writer, reader, c.Request.ContentLength)
+		}
+		c.Next()
+	}
+}
 
-			var buf strings.Builder
-			if _, err := io.Copy(&buf, reader); err != nil {
-				c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
-				return
-			}
+type gzipResponseWriter struct {
+	io.Writer
+	gin.ResponseWriter
+}
 
-			c.Request.Body = io.NopCloser(strings.NewReader(buf.String()))
+func (w *gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+func GzipResponseMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") {
+			c.Writer.Header().Set("Content-Encoding", "gzip")
+			gzipWriter := gzip.NewWriter(c.Writer)
+			defer gzipWriter.Close()
+
+			c.Writer = &gzipResponseWriter{Writer: gzipWriter, ResponseWriter: c.Writer}
 		}
 		c.Next()
 	}
