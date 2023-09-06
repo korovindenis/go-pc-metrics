@@ -35,7 +35,7 @@ func Exec(cfg cfg, handler serverHandler, log log) error {
 	// middleware
 	router.Use(logger.RequestLogger())
 	router.Use(middleware.CheckMethod())
-	router.Use(gin.Recovery())
+	//router.Use(gin.Recovery())
 	router.Use(middleware.GzipMiddleware())
 	router.Use(middleware.GzipResponseMiddleware())
 
