@@ -81,7 +81,7 @@ func (s *Storage) GetCounter(counterName string) (int64, error) {
 }
 
 func (s *Storage) GetAllData() (entity.MetricsType, error) {
-	return s.loadFromFile()
+	return s.metrics, nil
 }
 
 func (s *Storage) loadFromFile() (entity.MetricsType, error) {
