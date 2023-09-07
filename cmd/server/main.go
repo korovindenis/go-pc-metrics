@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -54,8 +55,11 @@ func main() {
 		os.Exit(ExitWithError)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	// Cancel the context when main() is terminated
+	defer cancel()
 	// save to file
-	go serverUsecase.SaveAllDataUsecase(cfg)
+	go serverUsecase.SaveAllDataUsecase(cfg, ctx)
 
 	// run web server
 	if err := serverapp.Exec(cfg, serverHandler, logger.Log); err != nil {

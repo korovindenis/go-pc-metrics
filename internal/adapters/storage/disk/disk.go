@@ -55,7 +55,6 @@ func (s *Storage) SaveAllData() error {
 func (s *Storage) SaveGauge(gaugeName string, gaugeValue float64) error {
 	s.metrics.Gauge[gaugeName] = gaugeValue
 	return nil
-	//return s.saveToFile()
 }
 
 func (s *Storage) GetGauge(gaugeName string) (float64, error) {
@@ -69,7 +68,6 @@ func (s *Storage) GetGauge(gaugeName string) (float64, error) {
 func (s *Storage) SaveCounter(counterName string, counterValue int64) error {
 	s.metrics.Counter[counterName] = counterValue
 	return nil
-	//return s.saveToFile()
 }
 
 func (s *Storage) GetCounter(counterName string) (int64, error) {

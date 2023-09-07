@@ -1,6 +1,7 @@
 package serverusecase
 
 import (
+	"context"
 	"time"
 
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
@@ -59,11 +60,17 @@ func (s *Server) GetAllDataUsecase() (entity.MetricsType, error) {
 	return s.storage.GetAllData()
 }
 
-func (s *Server) SaveAllDataUsecase(cfg cfg) {
+func (s *Server) SaveAllDataUsecase(cfg cfg, ctx context.Context) {
 	sendTicker := time.NewTicker(cfg.GetStoreInterval())
 	defer sendTicker.Stop()
 
-	for range sendTicker.C {
-		s.storage.SaveAllData()
+	for {
+		select {
+		case <-ctx.Done():
+			// context is end, exit from for
+			return
+		case <-sendTicker.C:
+			s.storage.SaveAllData()
+		}
 	}
 }

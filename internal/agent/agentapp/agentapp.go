@@ -113,10 +113,10 @@ func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServer
 
 // send data
 func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
-	jsonBody, _ := json.Marshal(metrics)
-	// if err != nil {
-	// 	return fmt.Errorf("err in Marshal: %s", err)
-	// }
+	jsonBody, err := json.Marshal(metrics)
+	if err != nil {
+		return fmt.Errorf("err in Marshal: %s", err)
+	}
 
 	var compressedBody bytes.Buffer
 	gz := gzip.NewWriter(&compressedBody)
