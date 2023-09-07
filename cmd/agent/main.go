@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/korovindenis/go-pc-metrics/internal/adapters/config"
 	agent "github.com/korovindenis/go-pc-metrics/internal/agent/agentapp"
+	"github.com/korovindenis/go-pc-metrics/internal/agent/config"
 	agentUsecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecases/agent"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"go.uber.org/zap"
@@ -18,7 +18,7 @@ const (
 
 func main() {
 	// init config (flags and env)
-	cfg, err := config.NewAgentConfig()
+	cfg, err := config.New()
 	if err != nil {
 		log.Println(err)
 		os.Exit(ExitWithError)

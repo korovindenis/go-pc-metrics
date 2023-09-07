@@ -5,10 +5,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/korovindenis/go-pc-metrics/internal/adapters/config"
 	storage "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/disk"
 	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecases/server"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
+	"github.com/korovindenis/go-pc-metrics/internal/server/config"
 	serverhandler "github.com/korovindenis/go-pc-metrics/internal/server/handler"
 	serverapp "github.com/korovindenis/go-pc-metrics/internal/server/serverapp"
 	"go.uber.org/zap"
@@ -21,7 +21,7 @@ const (
 
 func main() {
 	// init config (flags and env)
-	cfg, err := config.NewServerConfig()
+	cfg, err := config.New()
 	if err != nil {
 		log.Println(err)
 		os.Exit(ExitWithError)
