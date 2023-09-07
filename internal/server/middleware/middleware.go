@@ -22,11 +22,6 @@ func CheckMethod() gin.HandlerFunc {
 	}
 }
 
-// type gzipResponseWriter struct {
-// 	gin.ResponseWriter
-// 	writer *gzip.Writer
-// }
-
 func GzipMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if strings.Contains(c.GetHeader("Content-Encoding"), "gzip") {
