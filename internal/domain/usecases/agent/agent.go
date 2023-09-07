@@ -19,7 +19,6 @@ func New() (*Agent, error) {
 			Counter: make(map[string]int64, 1),
 		},
 	}
-	runtime.ReadMemStats(&agentUsecase.runtime)
 
 	return agentUsecase, nil
 }
@@ -31,6 +30,7 @@ func (a *Agent) UpdateCounter() error {
 }
 
 func (a *Agent) UpdateGauge() error {
+	runtime.ReadMemStats(&a.runtime)
 
 	a.metrics.Gauge = entity.GaugeType{
 		"Alloc":         float64(a.runtime.Alloc),
@@ -48,6 +48,7 @@ func (a *Agent) UpdateGauge() error {
 		"Lookups":       float64(a.runtime.Lookups),
 		"MCacheSys":     float64(a.runtime.MCacheSys),
 		"MSpanInuse":    float64(a.runtime.MSpanInuse),
+		"MCacheInuse":   float64(a.runtime.MSpanInuse),
 		"MSpanSys":      float64(a.runtime.MSpanSys),
 		"Mallocs":       float64(a.runtime.Mallocs),
 		"NextGC":        float64(a.runtime.NextGC),

@@ -10,9 +10,10 @@ import (
 )
 
 type configAdapter struct {
-	httpAddress    string
 	reportInterval int
 	pollInterval   int
+	httpAddress    string
+	logsLevel      string
 }
 
 func New() (*configAdapter, error) {
@@ -24,6 +25,7 @@ func New() (*configAdapter, error) {
 
 	// get data from flags
 	rootCmd.Flags().StringVarP(&adapter.httpAddress, "address", "a", "localhost:8080", "HTTP server address")
+	rootCmd.Flags().StringVarP(&adapter.logsLevel, "logs", "l", "info", "log level")
 	rootCmd.Flags().IntVarP(&adapter.reportInterval, "report", "r", 10, "Metrics report interval")
 	rootCmd.Flags().IntVarP(&adapter.pollInterval, "poll", "p", 2, "Metrics poll interval")
 	if err := rootCmd.Execute(); err != nil {
@@ -41,7 +43,6 @@ func New() (*configAdapter, error) {
 	if pollInterval, err := getEnvVariable("POLL_INTERVAL"); err == nil {
 		adapter.pollInterval, _ = strconv.Atoi(pollInterval)
 	}
-
 	return &adapter, nil
 }
 
@@ -59,6 +60,10 @@ func (f *configAdapter) GetReportInterval() time.Duration {
 
 func (f *configAdapter) GetPollInterval() time.Duration {
 	return time.Duration(f.pollInterval) * time.Second
+}
+
+func (f *configAdapter) GetLogsLevel() string {
+	return f.logsLevel
 }
 
 func getEnvVariable(varName string) (string, error) {

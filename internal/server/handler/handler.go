@@ -31,74 +31,112 @@ func New(u usecase) (*Handler, error) {
 }
 
 func (s *Handler) ReceptionMetrics(c *gin.Context) {
-	// get metric from url
-	namedURL := entity.MetricsURI{
-		MetricType: c.Param("metricType"),
-		MetricName: c.Param("metricName"),
-		MetricVal:  c.Param("metricVal"),
+	var metrics entity.Metrics
+
+	if c.GetHeader("Content-Type") == "application/json" {
+		// get metric from body
+		if err := c.ShouldBindJSON(&metrics); err != nil {
+			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+			return
+		}
+	} else {
+		// get metric from url
+		metrics = entity.Metrics{
+			MType: c.Param("metricType"),
+			ID:    c.Param("metricName"),
+		}
+		if c.Param("metricType") == "counter" {
+			metricVal, err := strconv.ParseInt(c.Param("metricVal"), 10, 64)
+			if err != nil {
+				c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
+				return
+			}
+
+			metrics.Delta = &metricVal
+		}
+		if c.Param("metricType") == "gauge" {
+			metricVal, err := strconv.ParseFloat(c.Param("metricVal"), 64)
+			if err != nil {
+				c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
+				return
+			}
+
+			metrics.Value = &metricVal
+		}
 	}
 
 	// validate metrics
-	if namedURL.MetricType == "" || namedURL.MetricName == "" || namedURL.MetricVal == "" {
+	if metrics.ID == "" || metrics.MType == "" {
 		c.AbortWithError(http.StatusNotFound, entity.ErrInvalidURLFormat)
 		return
 	}
 
 	// run usecases
-	switch namedURL.MetricType {
+	switch metrics.MType {
 	case "gauge":
-		// to float64
-		metricVal, err := strconv.ParseFloat(namedURL.MetricVal, 64)
-		if err != nil {
-			c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
-			return
-		}
-
 		// save metric
-		err = s.serverUsecase.SaveGaugeUsecase(namedURL.MetricName, metricVal)
-		if err != nil {
+		if err := s.serverUsecase.SaveGaugeUsecase(metrics.ID, *metrics.Value); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
+
+		// show actual metrics
+		gaugeVal, _ := s.serverUsecase.GetGaugeUsecase(metrics.ID)
+		metrics.Value = &gaugeVal
+		if c.Param("metricType") == "" {
+			c.JSON(http.StatusOK, metrics)
+			return
+		}
+		c.Status(http.StatusOK)
 	case "counter":
-		// to int64
-		metricVal, err := strconv.ParseInt(namedURL.MetricVal, 10, 64)
-		if err != nil {
-			c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
-			return
-		}
-
 		// save metric
-		err = s.serverUsecase.SaveCounterUsecase(namedURL.MetricName, metricVal)
-		if err != nil {
+		if err := s.serverUsecase.SaveCounterUsecase(metrics.ID, *metrics.Delta); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
+
+		// show actual metrics
+		counterVal, _ := s.serverUsecase.GetCounterUsecase(metrics.ID)
+		metrics.Delta = &counterVal
+		if c.Param("metricType") == "" {
+			c.JSON(http.StatusOK, metrics)
+			return
+		}
+		c.Status(http.StatusOK)
 	default:
 		c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 		return
 	}
 
-	c.Status(http.StatusOK)
 }
 
 func (s *Handler) OutputMetric(c *gin.Context) {
-	// get metric from url
-	namedURL := entity.MetricsURI{
-		MetricType: c.Param("metricType"),
-		MetricName: c.Param("metricName"),
+	var metrics entity.Metrics
+
+	if c.Param("metricType") == "" {
+		// get metric from body
+		if err := c.ShouldBindJSON(&metrics); err != nil {
+			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+			return
+		}
+	} else {
+		// get metric from url
+		metrics = entity.Metrics{
+			MType: c.Param("metricType"),
+			ID:    c.Param("metricName"),
+		}
 	}
 
 	// validate metrics
-	if namedURL.MetricType == "" || namedURL.MetricName == "" {
+	if metrics.MType == "" || metrics.ID == "" {
 		c.AbortWithError(http.StatusNotFound, entity.ErrInvalidURLFormat)
 		return
 	}
 
-	switch namedURL.MetricType {
+	switch metrics.MType {
 	case "gauge":
 		// get metric
-		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(namedURL.MetricName)
+		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(metrics.ID)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
@@ -109,10 +147,15 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 		}
 
 		// show metric
+		metrics.Value = &gaugeVal
+		if c.Param("metricType") == "" {
+			c.JSON(http.StatusOK, metrics)
+			return
+		}
 		c.String(http.StatusOK, strconv.FormatFloat(gaugeVal, 'g', -1, 64))
 	case "counter":
 		// get metric
-		counterVal, err := s.serverUsecase.GetCounterUsecase(namedURL.MetricName)
+		counterVal, err := s.serverUsecase.GetCounterUsecase(metrics.ID)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
@@ -123,12 +166,16 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 		}
 
 		// show metric
+		metrics.Delta = &counterVal
+		if c.Param("metricType") == "" {
+			c.JSON(http.StatusOK, metrics)
+			return
+		}
 		c.String(http.StatusOK, strconv.FormatInt(counterVal, 10))
 	default:
 		c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 		return
 	}
-
 }
 
 func (s *Handler) OutputAllMetrics(c *gin.Context) {

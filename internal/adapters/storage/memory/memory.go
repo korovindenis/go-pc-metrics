@@ -5,15 +5,21 @@ import (
 )
 
 type Storage struct {
-	entity.MetricsType
+	MetricsType entity.MetricsType
 }
 
-func New() (*Storage, error) {
-	storage := &Storage{}
-	storage.MetricsType.Gauge = make(map[string]float64)
-	storage.MetricsType.Counter = make(map[string]int64)
+type cfg interface {
+}
 
-	return storage, nil
+func New(config cfg) (*Storage, error) {
+	storage := Storage{
+		MetricsType: entity.MetricsType{
+			Gauge:   make(map[string]float64),
+			Counter: make(map[string]int64),
+		},
+	}
+
+	return &storage, nil
 }
 
 func (m *Storage) SaveGauge(gaugeName string, gaugeValue float64) error {
@@ -46,8 +52,9 @@ func (m *Storage) GetCounter(counterName string) (int64, error) {
 }
 
 func (m *Storage) GetAllData() (entity.MetricsType, error) {
-	return entity.MetricsType{
-		Gauge:   m.MetricsType.Gauge,
-		Counter: m.MetricsType.Counter,
-	}, nil
+	return m.MetricsType, nil
+}
+
+func (m *Storage) SaveAllData() error {
+	return nil
 }

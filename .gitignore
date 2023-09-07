@@ -24,4 +24,6 @@ vendor/
 .idea
 .vscode
 
+/tmp/
+runtest.bat
 TODO.md
