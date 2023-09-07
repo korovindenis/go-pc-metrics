@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	storage "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/disk"
+	storage "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/postgresql"
 	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecases/server"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/server/config"
@@ -59,7 +59,7 @@ func main() {
 	// Cancel the context when main() is terminated
 	defer cancel()
 	// save to file
-	go serverUsecase.SaveAllDataUsecase(cfg, ctx)
+	go serverUsecase.SaveAllDataUsecase(ctx, cfg)
 
 	// run web server
 	if err := serverapp.Exec(cfg, serverHandler, logger.Log); err != nil {

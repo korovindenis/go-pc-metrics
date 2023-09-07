@@ -43,6 +43,11 @@ func (m *mockServerUsecase) GetAllDataUsecase() (entity.MetricsType, error) {
 	return args.Get(0).(entity.MetricsType), args.Error(1)
 }
 
+func (m *mockServerUsecase) Ping() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func TestReceptionMetrics(t *testing.T) {
 	mockUsecase := new(mockServerUsecase)
 	handler, _ := New(mockUsecase)

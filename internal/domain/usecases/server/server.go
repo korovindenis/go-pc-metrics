@@ -17,6 +17,8 @@ type storage interface {
 
 	GetAllData() (entity.MetricsType, error)
 	SaveAllData() error
+
+	Ping() error
 }
 
 type cfg interface {
@@ -60,7 +62,7 @@ func (s *Server) GetAllDataUsecase() (entity.MetricsType, error) {
 	return s.storage.GetAllData()
 }
 
-func (s *Server) SaveAllDataUsecase(cfg cfg, ctx context.Context) {
+func (s *Server) SaveAllDataUsecase(ctx context.Context, cfg cfg) {
 	sendTicker := time.NewTicker(cfg.GetStoreInterval())
 	defer sendTicker.Stop()
 
@@ -73,4 +75,7 @@ func (s *Server) SaveAllDataUsecase(cfg cfg, ctx context.Context) {
 			s.storage.SaveAllData()
 		}
 	}
+}
+func (s *Server) Ping() error {
+	return s.storage.Ping()
 }

@@ -12,6 +12,7 @@ type serverHandler interface {
 	ReceptionMetrics(c *gin.Context)
 	OutputMetric(c *gin.Context)
 	OutputAllMetrics(c *gin.Context)
+	Ping(c *gin.Context)
 }
 
 // config functions
@@ -41,6 +42,7 @@ func Exec(cfg cfg, handler serverHandler, log log) error {
 
 	// routes
 	router.GET("/", handler.OutputAllMetrics)
+	router.GET("/ping/", handler.Ping)
 	router.GET("/value/:metricType/:metricName", handler.OutputMetric)
 	router.POST("/value/", handler.OutputMetric)
 	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetrics)

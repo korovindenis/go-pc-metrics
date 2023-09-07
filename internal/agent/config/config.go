@@ -38,10 +38,16 @@ func New() (*configAdapter, error) {
 		adapter.httpAddress = envHTTPAddress
 	}
 	if reportInterval, err := getEnvVariable("REPORT_INTERVAL"); err == nil {
-		adapter.reportInterval, _ = strconv.Atoi(reportInterval)
+		adapter.reportInterval, err = strconv.Atoi(reportInterval)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if pollInterval, err := getEnvVariable("POLL_INTERVAL"); err == nil {
-		adapter.pollInterval, _ = strconv.Atoi(pollInterval)
+		adapter.pollInterval, err = strconv.Atoi(pollInterval)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &adapter, nil
 }

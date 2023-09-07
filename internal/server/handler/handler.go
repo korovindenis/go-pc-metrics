@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -18,6 +19,8 @@ type usecase interface {
 	GetCounterUsecase(counterName string) (int64, error)
 
 	GetAllDataUsecase() (entity.MetricsType, error)
+
+	Ping() error
 }
 
 type Handler struct {
@@ -187,4 +190,14 @@ func (s *Handler) OutputAllMetrics(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"Metrics": data,
 	})
+}
+
+func (s *Handler) Ping(c *gin.Context) {
+	if err := s.serverUsecase.Ping(); err != nil {
+		fmt.Println(err)
+		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
