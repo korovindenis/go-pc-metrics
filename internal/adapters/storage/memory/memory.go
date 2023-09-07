@@ -23,10 +23,6 @@ func New(config cfg) (*Storage, error) {
 }
 
 func (m *Storage) SaveGauge(gaugeName string, gaugeValue float64) error {
-	//if m.MetricsType.Gauge == nil {
-	//m.MetricsType.Gauge = make(map[string]float64)
-	//}
-
 	m.MetricsType.Gauge[gaugeName] = gaugeValue
 
 	return nil
@@ -41,10 +37,6 @@ func (m *Storage) GetGauge(gaugeName string) (float64, error) {
 }
 
 func (m *Storage) SaveCounter(counterName string, counterValue int64) error {
-	//if m.MetricsType.Counter == nil {
-	//m.MetricsType.Counter = make(map[string]int64)
-	//}
-
 	m.MetricsType.Counter[counterName] = counterValue
 
 	return nil

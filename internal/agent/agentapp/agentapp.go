@@ -121,17 +121,17 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 	var compressedBody bytes.Buffer
 	gz := gzip.NewWriter(&compressedBody)
 
-	_, _ = gz.Write(jsonBody)
-	// if err != nil {
-	// 	return fmt.Errorf("err in gz Write: %s", err)
-	// }
+	_, err = gz.Write(jsonBody)
+	if err != nil {
+		return fmt.Errorf("err in gz Write: %s", err)
+	}
 
 	gz.Close()
 
-	req, _ := http.NewRequest("POST", httpServerAddress+"/update/", &compressedBody)
-	// if err != nil {
-	// 	return fmt.Errorf("err in NewRequest: %s", err)
-	// }
+	req, err := http.NewRequest("POST", httpServerAddress+"/update/", &compressedBody)
+	if err != nil {
+		return fmt.Errorf("err in NewRequest: %s", err)
+	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
@@ -139,7 +139,7 @@ func httpReq(restClient *http.Client, log logger, httpServerAddress string, metr
 
 	resp, err := restClient.Do(req)
 	if err != nil {
-		//return fmt.Errorf("err in httpclient: %s", err)
+		log.Info(fmt.Sprintf("err in httpclient: %s", err))
 	} else {
 		defer resp.Body.Close()
 		log.Info("Status Code:" + resp.Status)
