@@ -18,7 +18,7 @@ type storage interface {
 	GetAllData() (entity.MetricsType, error)
 	SaveAllData() error
 
-	Ping() error
+	Ping(ctx context.Context) error
 }
 
 type cfg interface {
@@ -76,6 +76,6 @@ func (s *Server) SaveAllDataUsecase(ctx context.Context, cfg cfg) {
 		}
 	}
 }
-func (s *Server) Ping() error {
-	return s.storage.Ping()
+func (s *Server) Ping(ctx context.Context) error {
+	return s.storage.Ping(ctx)
 }

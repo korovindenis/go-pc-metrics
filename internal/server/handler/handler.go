@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -20,7 +20,7 @@ type usecase interface {
 
 	GetAllDataUsecase() (entity.MetricsType, error)
 
-	Ping() error
+	Ping(ctx context.Context) error
 }
 
 type Handler struct {
@@ -193,8 +193,7 @@ func (s *Handler) OutputAllMetrics(c *gin.Context) {
 }
 
 func (s *Handler) Ping(c *gin.Context) {
-	if err := s.serverUsecase.Ping(); err != nil {
-		fmt.Println(err)
+	if err := s.serverUsecase.Ping(c.Request.Context()); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return
 	}

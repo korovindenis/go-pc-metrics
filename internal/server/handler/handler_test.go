@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -43,7 +44,7 @@ func (m *mockServerUsecase) GetAllDataUsecase() (entity.MetricsType, error) {
 	return args.Get(0).(entity.MetricsType), args.Error(1)
 }
 
-func (m *mockServerUsecase) Ping() error {
+func (m *mockServerUsecase) Ping(ctx context.Context) error {
 	args := m.Called()
 	return args.Error(0)
 }

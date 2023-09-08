@@ -94,8 +94,8 @@ func (s *Storage) GetAllData() (entity.MetricsType, error) {
 	return s.metrics, nil
 }
 
-func (s *Storage) Ping() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func (s *Storage) Ping(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	return s.db.PingContext(ctx)
