@@ -1,6 +1,8 @@
 package memory
 
 import (
+	"context"
+
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 )
 
@@ -56,5 +58,9 @@ func (m *Storage) GetAllData() (entity.MetricsType, error) {
 }
 
 func (m *Storage) SaveAllData() error {
+	return nil
+}
+
+func (s *Storage) Ping(ctx context.Context) error {
 	return nil
 }

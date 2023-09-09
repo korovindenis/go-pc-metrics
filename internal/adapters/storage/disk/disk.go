@@ -1,6 +1,7 @@
 package disk
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -118,5 +119,9 @@ func (s *Storage) saveToFile() error {
 		return err
 	}
 
+	return nil
+}
+
+func (s *Storage) Ping(ctx context.Context) error {
 	return nil
 }
