@@ -1,4 +1,4 @@
-package serverapp
+package app
 
 import (
 	"github.com/gin-gonic/gin"
@@ -26,7 +26,7 @@ type log interface {
 }
 
 // server main
-func Exec(cfg cfg, handler serverHandler, log log) error {
+func Run(cfg cfg, handler serverHandler, log log) error {
 	httpAddress := cfg.GetServerAddress()
 	router := gin.Default()
 

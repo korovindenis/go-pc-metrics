@@ -30,9 +30,14 @@ type Server struct {
 	storage storage
 }
 
-func New(s storage) (*Server, error) {
+func New(s any) (*Server, error) {
+	storageInstance, ok := s.(storage)
+	if !ok {
+		return nil, entity.ErrStorageInstance
+	}
+
 	return &Server{
-		storage: s,
+		storage: storageInstance,
 	}, nil
 }
 

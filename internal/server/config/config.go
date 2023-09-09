@@ -10,16 +10,19 @@ import (
 )
 
 type configAdapter struct {
+	restore                  bool
+	storeInterval            int
 	httpAddress              string
 	logsLevel                string
 	databaseConnectionString string
-	storeInterval            int
 	fileStoragePath          string
-	restore                  bool
+	storageType              string
 }
 
 func New() (*configAdapter, error) {
-	adapter := configAdapter{}
+	adapter := configAdapter{
+		storageType: "memory",
+	}
 	rootCmd := &cobra.Command{
 		Use:   "go-pc-metrics",
 		Short: "metrics",
@@ -50,6 +53,7 @@ func New() (*configAdapter, error) {
 	}
 	if fileStoragePath, err := getEnvVariable("FILE_STORAGE_PATH"); err == nil {
 		adapter.fileStoragePath = fileStoragePath
+		adapter.storageType = "disk"
 	}
 	if restore, err := getEnvVariable("RESTORE"); err == nil {
 		adapter.restore, err = strconv.ParseBool(restore)
@@ -59,6 +63,7 @@ func New() (*configAdapter, error) {
 	}
 	if databaseConnectionString, err := getEnvVariable("DATABASE_DSN"); err == nil {
 		adapter.databaseConnectionString = databaseConnectionString
+		adapter.storageType = "database"
 	}
 	return &adapter, nil
 }
@@ -92,6 +97,10 @@ func (f *configAdapter) GetRestore() bool {
 
 func (f *configAdapter) GetDatabaseConnectionString() string {
 	return f.databaseConnectionString
+}
+
+func (f *configAdapter) GetStorageType() string {
+	return f.storageType
 }
 
 func getEnvVariable(varName string) (string, error) {

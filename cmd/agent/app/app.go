@@ -1,4 +1,4 @@
-package agentapp
+package app
 
 import (
 	"bytes"
@@ -35,7 +35,7 @@ type config interface {
 }
 
 // agent main
-func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
+func Run(agentUsecase agentUsecase, log logger, cfg config) error {
 	restClient := &http.Client{}
 
 	httpServerAddress := cfg.GetServerAddressWithScheme()

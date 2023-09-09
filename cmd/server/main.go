@@ -5,12 +5,14 @@ import (
 	"log"
 	"os"
 
-	storage "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/postgresql"
+	"github.com/korovindenis/go-pc-metrics/cmd/server/app"
+	"github.com/korovindenis/go-pc-metrics/internal/adapters/storage/disk"
+	"github.com/korovindenis/go-pc-metrics/internal/adapters/storage/memory"
+	database "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/postgresql"
 	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecases/server"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/server/config"
 	serverhandler "github.com/korovindenis/go-pc-metrics/internal/server/handler"
-	serverapp "github.com/korovindenis/go-pc-metrics/internal/server/serverapp"
 	"go.uber.org/zap"
 )
 
@@ -34,10 +36,18 @@ func main() {
 		os.Exit(ExitWithError)
 	}
 
-	// init bd
-	storage, err := storage.New(cfg)
+	// init storage
+	var storage any
+	switch cfg.GetStorageType() {
+	case "database":
+		storage, err = database.New(cfg)
+	case "disk":
+		storage, err = disk.New(cfg)
+	default:
+		storage, err = memory.New(cfg)
+	}
 	if err != nil {
-		logger.Log.Error("init bd", zap.Error(err))
+		logger.Log.Error("init storage", zap.Error(err))
 		os.Exit(ExitWithError)
 	}
 
@@ -62,7 +72,7 @@ func main() {
 	go serverUsecase.SaveAllDataUsecase(ctx, cfg)
 
 	// run web server
-	if err := serverapp.Exec(cfg, serverHandler, logger.Log); err != nil {
+	if err := app.Run(cfg, serverHandler, logger.Log); err != nil {
 		logger.Log.Error("run web server", zap.Error(err))
 		os.Exit(ExitWithError)
 	}
