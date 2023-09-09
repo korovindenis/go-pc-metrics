@@ -1,13 +1,13 @@
 -- +goose Up
 CREATE TABLE gauge (
     id SERIAL PRIMARY KEY,
-    name CHAR(20) UNIQUE,
+    name CHAR(50) UNIQUE,
     value DOUBLE PRECISION
 );
 
 CREATE TABLE counter (
     id SERIAL PRIMARY KEY,
-    name CHAR(20) UNIQUE,
+    name CHAR(50) UNIQUE,
     value INTEGER
 );
 

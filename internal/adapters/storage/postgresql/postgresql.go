@@ -120,6 +120,9 @@ func (s *Storage) GetAllData() (entity.MetricsType, error) {
 		if err != nil {
 			return metrics, err
 		}
+		if err := rows.Err(); err != nil {
+			return metrics, err
+		}
 		metrics.Gauge[name] = value
 	}
 
@@ -134,6 +137,9 @@ func (s *Storage) GetAllData() (entity.MetricsType, error) {
 		var value int64
 		err := rows.Scan(&name, &value)
 		if err != nil {
+			return metrics, err
+		}
+		if err := rows.Err(); err != nil {
 			return metrics, err
 		}
 		metrics.Counter[name] = value
