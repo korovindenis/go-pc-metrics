@@ -61,6 +61,6 @@ func (m *Storage) SaveAllData() error {
 	return nil
 }
 
-func (s *Storage) Ping(ctx context.Context) error {
+func (m *Storage) Ping(ctx context.Context) error {
 	return nil
 }
