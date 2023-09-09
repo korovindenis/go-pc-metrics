@@ -3,19 +3,15 @@ package postgresql
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
-	"os"
-	"path/filepath"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"github.com/pressly/goose"
 )
 
 type Storage struct {
-	filePath string
-	metrics  entity.MetricsType
-	db       *sql.DB
+	db *sql.DB
 }
 
 type cfg interface {
@@ -31,67 +27,119 @@ func New(config cfg) (*Storage, error) {
 	}
 
 	storage := &Storage{
-		filePath: config.GetFileStoragePath(),
-		metrics: entity.MetricsType{
-			Gauge:   make(entity.GaugeType),
-			Counter: make(entity.CounterType),
-		},
 		db: db,
 	}
-	// create dir
-	if err := os.MkdirAll(filepath.Dir(storage.filePath), 0770); err != nil {
-		return nil, err
-	}
-	// open file
-	file, err := os.OpenFile(storage.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
 
-	if config.GetRestore() {
-		metrics, err := storage.loadFromFile()
-		if err != nil {
-			return storage, nil
-		}
-		storage.metrics = metrics
+	if err := storage.runMigrations(); err != nil {
+		return nil, err
 	}
 
 	return storage, nil
 }
 
+func (s *Storage) runMigrations() error {
+	if err := goose.Run("up", s.db, "deployments/db/migrations"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Storage) SaveAllData() error {
-	return s.saveToFile()
+	return nil
 }
 
 func (s *Storage) SaveGauge(gaugeName string, gaugeValue float64) error {
-	s.metrics.Gauge[gaugeName] = gaugeValue
+	_, err := s.db.Exec(`
+		INSERT INTO gauge (name, value)
+		VALUES ($1, $2)
+		ON CONFLICT (name)
+		DO UPDATE SET value = EXCLUDED.value;
+	`, gaugeName, gaugeValue)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (s *Storage) GetGauge(gaugeName string) (float64, error) {
-	val, ok := s.metrics.Gauge[gaugeName]
-	if !ok {
-		return val, entity.ErrMetricNotFound
+	var gaugeValue float64
+	err := s.db.QueryRow("SELECT value FROM gauge WHERE name = $1", gaugeName).Scan(&gaugeValue)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, entity.ErrMetricNotFound
+		} else {
+			return 0, err
+		}
 	}
-	return val, nil
+	return gaugeValue, nil
 }
 
 func (s *Storage) SaveCounter(counterName string, counterValue int64) error {
-	s.metrics.Counter[counterName] = counterValue
+	_, err := s.db.Exec(`
+		INSERT INTO counter (name, value)
+		VALUES ($1, $2)
+		ON CONFLICT (name)
+		DO UPDATE SET value = EXCLUDED.value;
+	`, counterName, counterValue)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (s *Storage) GetCounter(counterName string) (int64, error) {
-	val, ok := s.metrics.Counter[counterName]
-	if !ok {
-		return val, entity.ErrMetricNotFound
+	var counterValue int64
+	err := s.db.QueryRow("SELECT value FROM counter WHERE name = $1", counterName).Scan(&counterValue)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, entity.ErrMetricNotFound
+		} else {
+			return 0, err
+		}
 	}
-	return val, nil
+	return counterValue, nil
 }
 
 func (s *Storage) GetAllData() (entity.MetricsType, error) {
-	return s.metrics, nil
+	metrics := entity.MetricsType{
+		Gauge:   make(map[string]float64),
+		Counter: make(map[string]int64),
+	}
+
+	rows, err := s.db.Query("SELECT name, value FROM gauge")
+	if err != nil {
+		return metrics, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		var value float64
+		err := rows.Scan(&name, &value)
+		if err != nil {
+			return metrics, err
+		}
+		metrics.Gauge[name] = value
+	}
+
+	rows, err = s.db.Query("SELECT name, value FROM counter")
+	if err != nil {
+		return metrics, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		var value int64
+		err := rows.Scan(&name, &value)
+		if err != nil {
+			return metrics, err
+		}
+		metrics.Counter[name] = value
+	}
+
+	return metrics, nil
 }
 
 func (s *Storage) Ping(ctx context.Context) error {
@@ -99,43 +147,4 @@ func (s *Storage) Ping(ctx context.Context) error {
 	defer cancel()
 
 	return s.db.PingContext(ctx)
-}
-
-func (s *Storage) loadFromFile() (entity.MetricsType, error) {
-	file, err := os.OpenFile(s.filePath, os.O_RDONLY, 0666)
-	if err != nil {
-		return entity.MetricsType{
-			Gauge:   make(entity.GaugeType),
-			Counter: make(entity.CounterType),
-		}, err
-	}
-	defer file.Close()
-
-	var metrics entity.MetricsType
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&metrics)
-	if err != nil {
-		return entity.MetricsType{
-			Gauge:   make(entity.GaugeType),
-			Counter: make(entity.CounterType),
-		}, err
-	}
-
-	return metrics, nil
-}
-
-func (s *Storage) saveToFile() error {
-	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	err = encoder.Encode(s.metrics)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

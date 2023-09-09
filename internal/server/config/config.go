@@ -20,9 +20,7 @@ type configAdapter struct {
 }
 
 func New() (*configAdapter, error) {
-	adapter := configAdapter{
-		storageType: "memory",
-	}
+	adapter := configAdapter{}
 	rootCmd := &cobra.Command{
 		Use:   "go-pc-metrics",
 		Short: "metrics",
@@ -38,6 +36,12 @@ func New() (*configAdapter, error) {
 
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
+	}
+	if rootCmd.Flags().Changed("file_storage_path") {
+		adapter.storageType = "disk"
+	}
+	if rootCmd.Flags().Changed("database_dsn") {
+		adapter.storageType = "database"
 	}
 
 	// if env var not empty
