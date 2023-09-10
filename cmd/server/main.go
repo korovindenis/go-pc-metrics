@@ -9,6 +9,7 @@ import (
 	"github.com/korovindenis/go-pc-metrics/internal/adapters/storage/disk"
 	"github.com/korovindenis/go-pc-metrics/internal/adapters/storage/memory"
 	database "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/postgresql"
+	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecases/server"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/server/config"
@@ -52,7 +53,7 @@ func main() {
 	}
 
 	// init usecases
-	serverUsecase, err := serverusecase.New(storage)
+	serverUsecase, err := serverusecase.New(storage, cfg)
 	if err != nil {
 		logger.Log.Error("init usecases", zap.Error(err))
 		os.Exit(ExitWithError)
@@ -69,7 +70,7 @@ func main() {
 	// Cancel the context when main() is terminated
 	defer cancel()
 	// save to file
-	go serverUsecase.SaveAllDataUsecase(ctx, cfg)
+	go serverUsecase.SaveAllDataUsecase(ctx, []entity.Metrics{})
 
 	// run web server
 	if err := app.Run(cfg, serverHandler, logger.Log); err != nil {

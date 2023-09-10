@@ -49,16 +49,16 @@ func New(config cfg) (*Storage, error) {
 	return storage, nil
 }
 
-func (s *Storage) SaveAllData() error {
+func (s *Storage) SaveAllData(ctx context.Context, metrics []entity.Metrics) error {
 	return s.saveToFile()
 }
 
-func (s *Storage) SaveGauge(gaugeName string, gaugeValue float64) error {
+func (s *Storage) SaveGauge(ctx context.Context, gaugeName string, gaugeValue float64) error {
 	s.metrics.Gauge[gaugeName] = gaugeValue
 	return nil
 }
 
-func (s *Storage) GetGauge(gaugeName string) (float64, error) {
+func (s *Storage) GetGauge(ctx context.Context, gaugeName string) (float64, error) {
 	val, ok := s.metrics.Gauge[gaugeName]
 	if !ok {
 		return val, entity.ErrMetricNotFound
@@ -66,12 +66,12 @@ func (s *Storage) GetGauge(gaugeName string) (float64, error) {
 	return val, nil
 }
 
-func (s *Storage) SaveCounter(counterName string, counterValue int64) error {
+func (s *Storage) SaveCounter(ctx context.Context, counterName string, counterValue int64) error {
 	s.metrics.Counter[counterName] = counterValue
 	return nil
 }
 
-func (s *Storage) GetCounter(counterName string) (int64, error) {
+func (s *Storage) GetCounter(ctx context.Context, counterName string) (int64, error) {
 	val, ok := s.metrics.Counter[counterName]
 	if !ok {
 		return val, entity.ErrMetricNotFound
@@ -79,7 +79,7 @@ func (s *Storage) GetCounter(counterName string) (int64, error) {
 	return val, nil
 }
 
-func (s *Storage) GetAllData() (entity.MetricsType, error) {
+func (s *Storage) GetAllData(ctx context.Context) (entity.MetricsType, error) {
 	return s.metrics, nil
 }
 

@@ -9,14 +9,14 @@ import (
 
 // storage functions
 type storage interface {
-	SaveGauge(gaugeName string, gaugeValue float64) error
-	GetGauge(gaugeName string) (float64, error)
+	SaveGauge(ctx context.Context, gaugeName string, gaugeValue float64) error
+	GetGauge(ctx context.Context, gaugeName string) (float64, error)
 
-	SaveCounter(counterName string, counterValue int64) error
-	GetCounter(counterName string) (int64, error)
+	SaveCounter(ctx context.Context, counterName string, counterValue int64) error
+	GetCounter(ctx context.Context, counterName string) (int64, error)
 
-	GetAllData() (entity.MetricsType, error)
-	SaveAllData() error
+	GetAllData(ctx context.Context) (entity.MetricsType, error)
+	SaveAllData(ctx context.Context, metrics []entity.Metrics) error
 
 	Ping(ctx context.Context) error
 }
@@ -27,57 +27,59 @@ type cfg interface {
 }
 
 type Server struct {
-	storage storage
+	storage       storage
+	storeInterval time.Duration
 }
 
-func New(s any) (*Server, error) {
+func New(s any, config cfg) (*Server, error) {
 	storageInstance, ok := s.(storage)
 	if !ok {
 		return nil, entity.ErrStorageInstance
 	}
 
 	return &Server{
-		storage: storageInstance,
+		storage:       storageInstance,
+		storeInterval: config.GetStoreInterval(),
 	}, nil
 }
 
-func (s *Server) SaveGaugeUsecase(gaugeName string, gaugeValue float64) error {
-	return s.storage.SaveGauge(gaugeName, gaugeValue)
+func (s *Server) SaveGaugeUsecase(ctx context.Context, gaugeName string, gaugeValue float64) error {
+	return s.storage.SaveGauge(ctx, gaugeName, gaugeValue)
 }
 
-func (s *Server) GetGaugeUsecase(gaugeName string) (float64, error) {
-	return s.storage.GetGauge(gaugeName)
+func (s *Server) GetGaugeUsecase(ctx context.Context, gaugeName string) (float64, error) {
+	return s.storage.GetGauge(ctx, gaugeName)
 }
 
-func (s *Server) SaveCounterUsecase(counterName string, counterValue int64) error {
+func (s *Server) SaveCounterUsecase(ctx context.Context, counterName string, counterValue int64) error {
 	// current val + newVal
-	currentCounterValue, err := s.GetCounterUsecase(counterName)
+	currentCounterValue, err := s.GetCounterUsecase(ctx, counterName)
 	if err != nil && err != entity.ErrMetricNotFound {
 		return err
 	}
 
-	return s.storage.SaveCounter(counterName, counterValue+currentCounterValue)
+	return s.storage.SaveCounter(ctx, counterName, counterValue+currentCounterValue)
 }
 
-func (s *Server) GetCounterUsecase(counterName string) (int64, error) {
-	return s.storage.GetCounter(counterName)
+func (s *Server) GetCounterUsecase(ctx context.Context, counterName string) (int64, error) {
+	return s.storage.GetCounter(ctx, counterName)
 }
 
-func (s *Server) GetAllDataUsecase() (entity.MetricsType, error) {
-	return s.storage.GetAllData()
+func (s *Server) GetAllDataUsecase(ctx context.Context) (entity.MetricsType, error) {
+	return s.storage.GetAllData(ctx)
 }
 
-func (s *Server) SaveAllDataUsecase(ctx context.Context, cfg cfg) {
-	sendTicker := time.NewTicker(cfg.GetStoreInterval())
+func (s *Server) SaveAllDataUsecase(ctx context.Context, metrics []entity.Metrics) error {
+	sendTicker := time.NewTicker(s.storeInterval)
 	defer sendTicker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			// context is end, exit from for
-			return
+			return nil
 		case <-sendTicker.C:
-			s.storage.SaveAllData()
+			s.storage.SaveAllData(ctx, metrics)
 		}
 	}
 }

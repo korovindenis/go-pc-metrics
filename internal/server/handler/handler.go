@@ -12,13 +12,14 @@ import (
 
 // function usecase
 type usecase interface {
-	SaveGaugeUsecase(gaugeName string, gaugeValue float64) error
-	GetGaugeUsecase(gaugeName string) (float64, error)
+	SaveGaugeUsecase(ctx context.Context, gaugeName string, gaugeValue float64) error
+	GetGaugeUsecase(ctx context.Context, gaugeName string) (float64, error)
 
-	SaveCounterUsecase(counterName string, counterValue int64) error
-	GetCounterUsecase(counterName string) (int64, error)
+	SaveCounterUsecase(ctx context.Context, counterName string, counterValue int64) error
+	GetCounterUsecase(ctx context.Context, counterName string) (int64, error)
 
-	GetAllDataUsecase() (entity.MetricsType, error)
+	SaveAllDataUsecase(ctx context.Context, metrics []entity.Metrics) error
+	GetAllDataUsecase(ctx context.Context) (entity.MetricsType, error)
 
 	Ping(ctx context.Context) error
 }
@@ -33,8 +34,9 @@ func New(u usecase) (*Handler, error) {
 	}, nil
 }
 
-func (s *Handler) ReceptionMetrics(c *gin.Context) {
+func (s *Handler) ReceptionMetric(c *gin.Context) {
 	var metrics entity.Metrics
+	ctx := c.Request.Context()
 
 	if c.GetHeader("Content-Type") == "application/json" {
 		// get metric from body
@@ -78,13 +80,13 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	switch metrics.MType {
 	case "gauge":
 		// save metric
-		if err := s.serverUsecase.SaveGaugeUsecase(metrics.ID, *metrics.Value); err != nil {
+		if err := s.serverUsecase.SaveGaugeUsecase(ctx, metrics.ID, *metrics.Value); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
 
 		// show actual metrics
-		gaugeVal, _ := s.serverUsecase.GetGaugeUsecase(metrics.ID)
+		gaugeVal, _ := s.serverUsecase.GetGaugeUsecase(ctx, metrics.ID)
 		metrics.Value = &gaugeVal
 		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
@@ -93,13 +95,13 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		c.Status(http.StatusOK)
 	case "counter":
 		// save metric
-		if err := s.serverUsecase.SaveCounterUsecase(metrics.ID, *metrics.Delta); err != nil {
+		if err := s.serverUsecase.SaveCounterUsecase(ctx, metrics.ID, *metrics.Delta); err != nil {
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
 
 		// show actual metrics
-		counterVal, _ := s.serverUsecase.GetCounterUsecase(metrics.ID)
+		counterVal, _ := s.serverUsecase.GetCounterUsecase(ctx, metrics.ID)
 		metrics.Delta = &counterVal
 		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
@@ -112,9 +114,29 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	}
 
 }
+func (s *Handler) ReceptionMetrics(c *gin.Context) {
+	var metrics []entity.Metrics
+	ctx := c.Request.Context()
+
+	if c.GetHeader("Content-Type") != "application/json" {
+		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+		return
+	}
+	if err := c.ShouldBindJSON(&metrics); err != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+		return
+	}
+	if err := s.serverUsecase.SaveAllDataUsecase(ctx, metrics); err != nil {
+		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+		return
+	}
+
+	c.Status(200)
+}
 
 func (s *Handler) OutputMetric(c *gin.Context) {
 	var metrics entity.Metrics
+	ctx := c.Request.Context()
 
 	if c.Param("metricType") == "" {
 		// get metric from body
@@ -139,7 +161,7 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 	switch metrics.MType {
 	case "gauge":
 		// get metric
-		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(metrics.ID)
+		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(ctx, metrics.ID)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
@@ -158,7 +180,7 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 		c.String(http.StatusOK, strconv.FormatFloat(gaugeVal, 'g', -1, 64))
 	case "counter":
 		// get metric
-		counterVal, err := s.serverUsecase.GetCounterUsecase(metrics.ID)
+		counterVal, err := s.serverUsecase.GetCounterUsecase(ctx, metrics.ID)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
@@ -182,7 +204,8 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 }
 
 func (s *Handler) OutputAllMetrics(c *gin.Context) {
-	data, err := s.serverUsecase.GetAllDataUsecase()
+	ctx := c.Request.Context()
+	data, err := s.serverUsecase.GetAllDataUsecase(ctx)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return

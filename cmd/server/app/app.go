@@ -9,6 +9,7 @@ import (
 
 // function handler
 type serverHandler interface {
+	ReceptionMetric(c *gin.Context)
 	ReceptionMetrics(c *gin.Context)
 	OutputMetric(c *gin.Context)
 	OutputAllMetrics(c *gin.Context)
@@ -45,8 +46,9 @@ func Run(cfg cfg, handler serverHandler, log log) error {
 	router.GET("/ping/", handler.Ping)
 	router.GET("/value/:metricType/:metricName", handler.OutputMetric)
 	router.POST("/value/", handler.OutputMetric)
-	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetrics)
-	router.POST("/update/", handler.ReceptionMetrics)
+	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetric)
+	router.POST("/update/", handler.ReceptionMetric)
+	router.POST("/updates/", handler.ReceptionMetrics)
 
 	// start server
 	return router.Run(httpAddress)
