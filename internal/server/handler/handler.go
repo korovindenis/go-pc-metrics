@@ -22,12 +22,14 @@ type usecase interface {
 	SaveAllDataUsecase(ctx context.Context, metrics []entity.Metrics) error
 	GetAllDataUsecase(ctx context.Context) (entity.MetricsType, error)
 
+	SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.Metrics) error
+
 	Ping(ctx context.Context) error
 }
 
-type usecasesWithBd interface {
-	SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.Metrics) error
-}
+// type usecasesWithBd interface {
+// 	SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.Metrics) error
+// }
 
 type Handler struct {
 	serverUsecase usecase
@@ -132,12 +134,18 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 		return
 	}
-	usecasesWithBd, ok := s.serverUsecase.(usecasesWithBd)
-	if !ok {
-		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
-		return
-	}
-	if err := usecasesWithBd.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
+	// usecasesWithBd, ok := s.serverUsecase.(usecasesWithBd)
+	// if !ok {
+	// 	c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+	// 	return
+	// }
+
+	// if err := usecasesWithBd.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
+	// 	c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+	// 	return
+	// }
+
+	if err := s.serverUsecase.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return
 	}
@@ -171,6 +179,8 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 
 	switch metrics.MType {
 	case "gauge":
+		fmt.Println("Handler  data" + fmt.Sprintf("%+v", metrics))
+
 		// get metric
 		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(ctx, metrics.ID)
 		if err != nil {

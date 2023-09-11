@@ -41,12 +41,13 @@ func main() {
 	var storage any
 	switch cfg.GetStorageType() {
 	case "database":
-		storage, err = database.New(cfg)
+		storage, err = database.New(cfg, logger.Log)
 	case "disk":
-		storage, err = disk.New(cfg)
+		storage, err = disk.New(cfg, logger.Log)
 	default:
-		storage, err = memory.New(cfg)
+		storage, err = memory.New(cfg, logger.Log)
 	}
+
 	if err != nil {
 		logger.Log.Error("init storage", zap.Error(err))
 		os.Exit(ExitWithError)

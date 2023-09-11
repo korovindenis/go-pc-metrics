@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"go.uber.org/zap/zapcore"
 )
 
 type Storage struct {
@@ -19,7 +20,13 @@ type cfg interface {
 	GetRestore() bool
 }
 
-func New(config cfg) (*Storage, error) {
+type log interface {
+	Info(msg string, fields ...zapcore.Field)
+}
+
+func New(config cfg, log log) (*Storage, error) {
+	log.Info("Storage is disk")
+
 	storage := &Storage{
 		filePath: config.GetFileStoragePath(),
 		metrics: entity.MetricsType{

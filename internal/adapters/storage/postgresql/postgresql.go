@@ -8,10 +8,15 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	"github.com/pressly/goose"
+	"go.uber.org/zap/zapcore"
 )
 
 type Storage struct {
 	db *sql.DB
+}
+
+type log interface {
+	Info(msg string, fields ...zapcore.Field)
 }
 
 type cfg interface {
@@ -20,7 +25,9 @@ type cfg interface {
 	GetDatabaseConnectionString() string
 }
 
-func New(config cfg) (*Storage, error) {
+func New(config cfg, log log) (*Storage, error) {
+	log.Info("Storage is database")
+
 	db, err := sql.Open("pgx", config.GetDatabaseConnectionString())
 	if err != nil {
 		return nil, err
