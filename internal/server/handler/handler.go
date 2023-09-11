@@ -134,17 +134,6 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 		return
 	}
-	// usecasesWithBd, ok := s.serverUsecase.(usecasesWithBd)
-	// if !ok {
-	// 	c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
-	// 	return
-	// }
-
-	// if err := usecasesWithBd.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
-	// 	c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
-	// 	return
-	// }
-
 	if err := s.serverUsecase.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return

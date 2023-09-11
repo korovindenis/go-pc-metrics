@@ -54,6 +54,11 @@ func (m *mockServerUsecase) Ping(ctx context.Context) error {
 	return args.Error(0)
 }
 
+func (m *mockServerUsecase) SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.Metrics) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func TestReceptionMetric(t *testing.T) {
 	mockUsecase := new(mockServerUsecase)
 	handler, _ := New(mockUsecase)

@@ -69,22 +69,12 @@ func (m *Storage) GetAllData(ctx context.Context) (entity.MetricsType, error) {
 }
 
 func (m *Storage) SaveAllData(ctx context.Context, metrics []entity.Metrics) error {
-	for val, _ := range metrics {
-		switch val.Mtype {
+	for _, metric := range metrics {
+		switch metric.MType {
 		case "gauge":
-			metrics = append(metrics, entity.Metrics{
-				ID:    val.ID,
-				MType: "gauge",
-				Value: &val.Value,
-			})
+			m.MetricsType.Gauge[metric.ID] = *metric.Value
 		case "counter":
-			for name, value := range metricsVal.(entity.CounterType) {
-				metrics = append(metrics, entity.Metrics{
-					ID:    name,
-					MType: "counter",
-					Delta: &value,
-				})
-			}
+			m.MetricsType.Counter[metric.ID] = *metric.Delta
 		default:
 			return errors.New("sendMetrics(): metricsVal not recognized")
 		}
