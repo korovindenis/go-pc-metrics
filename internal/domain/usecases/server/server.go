@@ -83,6 +83,11 @@ func (s *Server) SaveAllDataUsecase(ctx context.Context, metrics []entity.Metric
 		}
 	}
 }
+
+func (s *Server) SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.Metrics) error {
+	return s.storage.SaveAllData(ctx, metrics)
+}
+
 func (s *Server) Ping(ctx context.Context) error {
 	return s.storage.Ping(ctx)
 }

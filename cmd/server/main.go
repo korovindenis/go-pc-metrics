@@ -66,11 +66,13 @@ func main() {
 		os.Exit(ExitWithError)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	// Cancel the context when main() is terminated
-	defer cancel()
 	// save to file
-	go serverUsecase.SaveAllDataUsecase(ctx, []entity.Metrics{})
+	if cfg.GetStorageType() == "disk" {
+		ctx, cancel := context.WithCancel(context.Background())
+		// Cancel the context when main() is terminated
+		defer cancel()
+		go serverUsecase.SaveAllDataUsecase(ctx, []entity.Metrics{})
+	}
 
 	// run web server
 	if err := app.Run(cfg, serverHandler, logger.Log); err != nil {

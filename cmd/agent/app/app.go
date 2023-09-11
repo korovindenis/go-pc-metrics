@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -80,63 +79,50 @@ func Run(agentUsecase agentUsecase, log logger, cfg config) error {
 
 // prepare data
 func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServerAddress string) error {
+	var metrics []entity.Metrics
+
 	switch v := metricsVal.(type) {
 	case entity.GaugeType:
 		_ = v // for go vet
 		for name, value := range metricsVal.(entity.GaugeType) {
-			metrics := entity.Metrics{
+			metrics = append(metrics, entity.Metrics{
 				ID:    name,
 				MType: "gauge",
 				Value: &value,
-			}
-			if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
-				return fmt.Errorf("sendMetrics entity.GaugeType: %s", err)
-			}
+			})
 		}
 	case entity.CounterType:
 		for name, value := range metricsVal.(entity.CounterType) {
-			metrics := entity.Metrics{
+			metrics = append(metrics, entity.Metrics{
 				ID:    name,
 				MType: "counter",
 				Delta: &value,
-			}
-			if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
-				return fmt.Errorf("sendMetrics entity.CounterType: %s", err)
-			}
+			})
 		}
 	default:
 		return errors.New("sendMetrics(): metricsVal not recognized")
 	}
-
+	if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
+		return fmt.Errorf("sendMetrics entity.CounterType: %s", err)
+	}
 	return nil
 }
 
 // send data
-func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
+func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics []entity.Metrics) error {
 	jsonBody, err := json.Marshal(metrics)
 	if err != nil {
 		return fmt.Errorf("err in Marshal: %s", err)
 	}
 
-	var compressedBody bytes.Buffer
-	gz := gzip.NewWriter(&compressedBody)
+	log.Info("send: " + string(jsonBody))
 
-	_, err = gz.Write(jsonBody)
-	if err != nil {
-		return fmt.Errorf("err in gz Write: %s", err)
-	}
-
-	gz.Close()
-
-	req, err := http.NewRequest("POST", httpServerAddress+"/update/", &compressedBody)
+	req, err := http.NewRequest("POST", httpServerAddress+"/updates/", bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return fmt.Errorf("err in NewRequest: %s", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Content-Encoding", "gzip")
-	req.Header.Set("Accept-Encoding", "gzip")
-
 	resp, err := restClient.Do(req)
 	if err != nil {
 		log.Info(fmt.Sprintf("err in httpclient: %s", err))

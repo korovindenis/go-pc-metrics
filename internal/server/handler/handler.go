@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -22,6 +23,10 @@ type usecase interface {
 	GetAllDataUsecase(ctx context.Context) (entity.MetricsType, error)
 
 	Ping(ctx context.Context) error
+}
+
+type usecasesWithBd interface {
+	SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.Metrics) error
 }
 
 type Handler struct {
@@ -123,10 +128,16 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		return
 	}
 	if err := c.ShouldBindJSON(&metrics); err != nil {
+		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 		return
 	}
-	if err := s.serverUsecase.SaveAllDataUsecase(ctx, metrics); err != nil {
+	usecasesWithBd, ok := s.serverUsecase.(usecasesWithBd)
+	if !ok {
+		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+		return
+	}
+	if err := usecasesWithBd.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return
 	}
