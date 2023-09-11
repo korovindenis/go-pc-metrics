@@ -130,7 +130,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		return
 	}
 	if err := c.ShouldBindJSON(&metrics); err != nil {
-		fmt.Println(err)
+		fmt.Println("Error binding JSON:", err)
+
 		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 		return
 	}
