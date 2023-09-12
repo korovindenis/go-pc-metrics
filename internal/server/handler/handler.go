@@ -1,9 +1,13 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -129,9 +133,18 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 		return
 	}
-	if err := c.ShouldBindJSON(&metrics); err != nil {
-		fmt.Println("Error binding JSON:", err)
 
+	// Создаем временный буфер для чтения тела запроса и вывода его содержимого
+	var requestBodyBuffer bytes.Buffer
+	teeReader := io.TeeReader(c.Request.Body, &requestBodyBuffer)
+
+	// Выводим содержимое тела запроса
+	requestBody, _ := ioutil.ReadAll(teeReader)
+	fmt.Println("Request Body:", string(requestBody))
+
+	decoder := json.NewDecoder(c.Request.Body)
+	if err := decoder.Decode(&metrics); err != nil {
+		fmt.Println("Error decoding JSON:", err)
 		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 		return
 	}
@@ -140,7 +153,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		return
 	}
 
-	c.Status(200)
+	c.JSON(http.StatusOK, struct{}{})
 }
 
 func (s *Handler) OutputMetric(c *gin.Context) {
