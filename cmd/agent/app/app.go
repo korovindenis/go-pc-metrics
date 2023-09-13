@@ -112,13 +112,11 @@ func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServe
 
 // send data
 func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, metrics []entity.Metrics) error {
-	// Преобразовать метрики в JSON
 	jsonBody, err := json.Marshal(metrics)
 	if err != nil {
 		return fmt.Errorf("error in Marshal: %s", err)
 	}
 
-	// Сжать JSON-данные с использованием Gzip
 	var compressedBody bytes.Buffer
 	gz := gzip.NewWriter(&compressedBody)
 	_, err = gz.Write(jsonBody)
@@ -127,31 +125,24 @@ func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, me
 	}
 	gz.Close()
 
-	// Создать новый запрос с использованием Resty
 	resp, err := restyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("Accept-Encoding", "gzip").
-		SetHeader("Content-Length", strconv.Itoa(compressedBody.Len())). // Добавить Content-Length
-		SetBody(compressedBody.Bytes()).                                 // Использовать сжатое тело
+		SetHeader("Content-Length", strconv.Itoa(compressedBody.Len())).
+		SetBody(compressedBody.Bytes()).
 		EnableTrace().
 		Post(httpServerAddress + "/updates/")
 
 	if err != nil {
 		log.Info(fmt.Sprintf("error in httpclient: %s", err))
-		return err
 	}
 
-	// Проверить код статуса ответа
 	if resp.IsError() {
 		log.Info("Status Code:" + resp.Status())
 		log.Info("HTTP Error: " + resp.Status())
 		log.Info("Response Body: " + resp.String())
 	}
-
-	// Если нужно, можно получить ответ
-	// responseBody := resp.Body()
-
 	return nil
 }
 
