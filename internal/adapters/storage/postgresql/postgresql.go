@@ -158,14 +158,14 @@ func (s *Storage) GetAllData(ctx context.Context) (entity.MetricsType, error) {
 
 	for rows.Next() {
 		var name string
-		var value int64
-		if err := rows.Scan(&name, &value); err != nil {
+		var delta int64
+		if err := rows.Scan(&name, &delta); err != nil {
 			return metrics, err
 		}
 		if err := rows.Err(); err != nil {
 			return metrics, err
 		}
-		metrics.Counter[name] = value
+		metrics.Counter[name] = delta
 	}
 
 	return metrics, nil
