@@ -67,6 +67,7 @@ func (a *Agent) UpdateGauge() error {
 }
 
 func (a *Agent) GetGauge() (entity.GaugeType, error) {
+
 	return a.metrics.Gauge, nil
 }
 
