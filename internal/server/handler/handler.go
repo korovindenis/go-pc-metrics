@@ -140,14 +140,19 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 
 	// Выводим содержимое тела запроса
 	requestBody, _ := ioutil.ReadAll(teeReader)
+	defer c.Request.Body.Close()
 	fmt.Println("Request Body:", string(requestBody))
 
-	decoder := json.NewDecoder(c.Request.Body)
-	if err := decoder.Decode(&metrics); err != nil {
+	if err := json.Unmarshal(requestBody, &metrics); err != nil {
 		fmt.Println("Error decoding JSON:", err)
 		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 		return
 	}
+	// if err := json.NewDecoder(c.Request.Body).Decode(&metrics); err != nil {
+	// 	fmt.Println("Error decoding JSON:", err)
+	// 	c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
+	// 	return
+	// }
 	if err := s.serverUsecase.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return

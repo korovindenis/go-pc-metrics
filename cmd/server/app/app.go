@@ -40,6 +40,7 @@ func Run(cfg cfg, handler serverHandler, log log) error {
 	router.Use(gin.Recovery())
 	router.Use(middleware.GzipMiddleware())
 	router.Use(middleware.GzipResponseMiddleware())
+	//router.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	// routes
 	router.GET("/", handler.OutputAllMetrics)
