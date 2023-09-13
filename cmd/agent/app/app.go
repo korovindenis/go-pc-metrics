@@ -38,6 +38,7 @@ type config interface {
 // agent main
 func Run(agentUsecase agentUsecase, log logger, cfg config) error {
 	restClient := resty.New()
+	restClient.SetDebug(true)
 
 	httpServerAddress := cfg.GetServerAddressWithScheme()
 
@@ -112,10 +113,21 @@ func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServe
 
 // send data
 func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, metrics []entity.Metrics) error {
+	float := 42.5
+	metrics = []entity.Metrics{
+		entity.Metrics{
+			ID:    "test_id",
+			MType: "gauge",
+			Value: &float,
+		},
+	}
+
 	jsonBody, err := json.Marshal(metrics)
 	if err != nil {
 		return fmt.Errorf("error in Marshal: %s", err)
 	}
+
+	fmt.Println("Send Metrics:", string(jsonBody))
 
 	var compressedBody bytes.Buffer
 	gz := gzip.NewWriter(&compressedBody)

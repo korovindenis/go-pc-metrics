@@ -134,20 +134,20 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 		return
 	}
 
-	// Создаем временный буфер для чтения тела запроса и вывода его содержимого
 	var requestBodyBuffer bytes.Buffer
 	teeReader := io.TeeReader(c.Request.Body, &requestBodyBuffer)
 
-	// Выводим содержимое тела запроса
 	requestBody, _ := ioutil.ReadAll(teeReader)
 	defer c.Request.Body.Close()
-	fmt.Println("Request Body:", string(requestBody))
+	//fmt.Println("Request Body:", string(requestBody))
 
 	if err := json.Unmarshal(requestBody, &metrics); err != nil {
 		fmt.Println("Error decoding JSON:", err)
 		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 		return
 	}
+	fmt.Println("Request Metrics:", string(requestBody))
+
 	// if err := json.NewDecoder(c.Request.Body).Decode(&metrics); err != nil {
 	// 	fmt.Println("Error decoding JSON:", err)
 	// 	c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
