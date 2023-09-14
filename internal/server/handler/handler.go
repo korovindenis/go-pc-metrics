@@ -154,6 +154,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	// 	return
 	// }
 	if err := s.serverUsecase.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
+		fmt.Println(err)
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return
 	}

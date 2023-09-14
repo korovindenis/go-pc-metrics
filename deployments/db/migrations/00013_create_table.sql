@@ -12,7 +12,7 @@ CREATE TABLE counter (
     id SERIAL PRIMARY KEY,
     created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     name CHAR(50) NOT NULL,
-    delta INTEGER NOT NULL
+    delta BIGINT NOT NULL
 );
 
 -- +goose Down
