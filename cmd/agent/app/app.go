@@ -1,12 +1,9 @@
 package app
 
 import (
-	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -38,7 +35,7 @@ type config interface {
 // agent main
 func Run(agentUsecase agentUsecase, log logger, cfg config) error {
 	restClient := resty.New()
-	restClient.SetDebug(true)
+	//restClient.SetDebug(true)
 
 	httpServerAddress := cfg.GetServerAddressWithScheme()
 
@@ -125,20 +122,21 @@ func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, me
 
 	fmt.Println("Send Metrics:", string(jsonBody))
 
-	var compressedBody bytes.Buffer
-	gz := gzip.NewWriter(&compressedBody)
-	_, err = gz.Write(jsonBody)
-	if err != nil {
-		return fmt.Errorf("error in gz Write: %s", err)
-	}
-	gz.Close()
+	// var compressedBody bytes.Buffer
+	// gz := gzip.NewWriter(&compressedBody)
+	// _, err = gz.Write(jsonBody)
+	// if err != nil {
+	// 	return fmt.Errorf("error in gz Write: %s", err)
+	// }
+	// gz.Close()
 
 	resp, err := restyClient.R().
 		SetHeader("Content-Type", "application/json").
-		SetHeader("Content-Encoding", "gzip").
-		SetHeader("Accept-Encoding", "gzip").
-		SetHeader("Content-Length", strconv.Itoa(compressedBody.Len())).
-		SetBody(compressedBody.Bytes()).
+		//SetHeader("Content-Encoding", "gzip").
+		//SetHeader("Accept-Encoding", "gzip").
+		//SetHeader("Content-Length", strconv.Itoa(compressedBody.Len())).
+		//SetBody(compressedBody.Bytes()).
+		SetBody(jsonBody).
 		EnableTrace().
 		Post(httpServerAddress + "/updates/")
 
