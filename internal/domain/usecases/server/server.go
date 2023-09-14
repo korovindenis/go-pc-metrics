@@ -85,6 +85,18 @@ func (s *Server) SaveAllDataUsecase(ctx context.Context, metrics []entity.Metric
 }
 
 func (s *Server) SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.Metrics) error {
+	var sumCounter int64
+	for _, val := range metrics {
+		if val.MType == "counter" {
+			sumCounter += int64(*val.Delta)
+		}
+	}
+	for key, val := range metrics {
+		if val.MType == "counter" {
+			metrics[key].Delta = &sumCounter
+		}
+	}
+
 	return s.storage.SaveAllData(ctx, metrics)
 }
 
