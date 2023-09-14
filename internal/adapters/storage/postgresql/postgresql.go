@@ -3,6 +3,7 @@ package postgresql
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -86,7 +87,7 @@ func (s *Storage) SaveGauge(ctx context.Context, gaugeName string, gaugeValue fl
 
 func (s *Storage) GetGauge(ctx context.Context, gaugeName string) (float64, error) {
 	var gaugeValue float64
-	err := s.db.QueryRowContext(ctx, "SELECT value FROM gauge WHERE name = $1 ORDER BY created DESC", gaugeName).Scan(&gaugeValue)
+	err := s.db.QueryRowContext(ctx, "SELECT value FROM gauge WHERE name = $1 ORDER BY id DESC", gaugeName).Scan(&gaugeValue)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, entity.ErrMetricNotFound
@@ -94,6 +95,8 @@ func (s *Storage) GetGauge(ctx context.Context, gaugeName string) (float64, erro
 			return 0, err
 		}
 	}
+	formattedValue := fmt.Sprintf("%.15f", gaugeValue)
+	fmt.Println(formattedValue)
 	return gaugeValue, nil
 }
 
@@ -107,7 +110,7 @@ func (s *Storage) SaveCounter(ctx context.Context, counterName string, counterVa
 
 func (s *Storage) GetCounter(ctx context.Context, counterName string) (int64, error) {
 	var counterValue int64
-	err := s.db.QueryRowContext(ctx, "SELECT delta FROM counter WHERE name = $1 ORDER BY created DESC", counterName).Scan(&counterValue)
+	err := s.db.QueryRowContext(ctx, "SELECT delta FROM counter WHERE name = $1 ORDER BY id DESC", counterName).Scan(&counterValue)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, entity.ErrMetricNotFound
