@@ -74,7 +74,6 @@ func (w *gzipResponseWriter) Write(b []byte) (int, error) {
 
 func GzipResponseMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		if strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") {
 			c.Writer.Header().Set("Content-Encoding", "gzip")
 			gzipWriter := gzip.NewWriter(c.Writer)
