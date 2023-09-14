@@ -130,7 +130,7 @@ func (s *Storage) GetAllData(ctx context.Context) (entity.MetricsType, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT DISTINCT ON (name) name, value
 		FROM gauge
-		ORDER BY name, created DESC;
+		ORDER BY name, id DESC;
 	`)
 	if err != nil {
 		return metrics, err
@@ -152,7 +152,7 @@ func (s *Storage) GetAllData(ctx context.Context) (entity.MetricsType, error) {
 	rows, err = s.db.QueryContext(ctx, `
 		SELECT DISTINCT ON (name) name, delta
 		FROM counter
-		ORDER BY name, created DESC;
+		ORDER BY name, id DESC;
 	`)
 	if err != nil {
 		return metrics, err
