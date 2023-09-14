@@ -1,8 +1,12 @@
 package app
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -65,14 +69,14 @@ func Run(agentUsecase agentUsecase, log logger, cfg config) error {
 			if err != nil {
 				return fmt.Errorf("agentapp Exec sendMetrics: %s", err)
 			}
-			// counterVal, err := agentUsecase.GetCounter()
-			// if err != nil {
-			// 	return fmt.Errorf("agentapp Exec GetCounter: %s", err)
-			// }
-			// err = sendMetrics(restClient, counterVal, log, httpServerAddress)
-			// if err != nil {
-			// 	return fmt.Errorf("agentapp Exec sendMetrics: %s", err)
-			// }
+			counterVal, err := agentUsecase.GetCounter()
+			if err != nil {
+				return fmt.Errorf("agentapp Exec GetCounter: %s", err)
+			}
+			err = sendMetrics(restClient, counterVal, log, httpServerAddress)
+			if err != nil {
+				return fmt.Errorf("agentapp Exec sendMetrics: %s", err)
+			}
 		}
 	}
 }
@@ -85,12 +89,13 @@ func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServe
 	case entity.GaugeType:
 		_ = v // for go vet
 		for name, value := range metricsVal.(entity.GaugeType) {
+			floatValue := new(float64)
+			*floatValue = value
 			metrics = append(metrics, entity.Metrics{
 				ID:    name,
 				MType: "gauge",
-				Value: &value,
+				Value: floatValue,
 			})
-			//fmt.Println(fmt.Sprintf("%d", &value))
 		}
 	case entity.CounterType:
 		for name, value := range metricsVal.(entity.CounterType) {
@@ -112,47 +117,39 @@ func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServe
 
 // send data
 func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, metrics []entity.Metrics) error {
-	// float := 42.5
-	// metrics = []entity.Metrics{
-	// 	entity.Metrics{
-	// 		ID:    "test_id",
-	// 		MType: "gauge",
-	// 		Value: &float,
-	// 	},
-	// }
 
-	// jsonBody, err := json.Marshal(metrics)
-	// if err != nil {
-	// 	return fmt.Errorf("error in Marshal: %s", err)
-	// }
+	jsonBody, err := json.Marshal(metrics)
+	if err != nil {
+		return fmt.Errorf("error in Marshal: %s", err)
+	}
 
-	// fmt.Println("Send Metrics:", string(jsonBody))
+	fmt.Println("Send Metrics:", string(jsonBody))
 
-	// var compressedBody bytes.Buffer
-	// gz := gzip.NewWriter(&compressedBody)
-	// _, err = gz.Write(jsonBody)
-	// if err != nil {
-	// 	return fmt.Errorf("error in gz Write: %s", err)
-	// }
-	// gz.Close()
+	var compressedBody bytes.Buffer
+	gz := gzip.NewWriter(&compressedBody)
+	_, err = gz.Write(jsonBody)
+	if err != nil {
+		return fmt.Errorf("error in gz Write: %s", err)
+	}
+	gz.Close()
 
-	// resp, err := restyClient.R().
-	// 	SetHeader("Content-Type", "application/json").
-	// 	SetHeader("Content-Encoding", "gzip").
-	// 	SetHeader("Accept-Encoding", "gzip").
-	// 	SetHeader("Content-Length", strconv.Itoa(compressedBody.Len())).
-	// 	SetBody(compressedBody.Bytes()).
-	// 	EnableTrace().
-	// 	Post(httpServerAddress + "/updates/")
+	resp, err := restyClient.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Accept-Encoding", "gzip").
+		SetHeader("Content-Length", strconv.Itoa(compressedBody.Len())).
+		SetBody(compressedBody.Bytes()).
+		EnableTrace().
+		Post(httpServerAddress + "/updates/")
 
-	// if err != nil {
-	// 	log.Info(fmt.Sprintf("error in httpclient: %s", err))
-	// }
+	if err != nil {
+		log.Info(fmt.Sprintf("error in httpclient: %s", err))
+	}
 
-	// if resp.IsError() {
-	// 	log.Info("Status Code:" + resp.Status())
-	// 	log.Info("HTTP Error: " + resp.Status())
-	// 	log.Info("Response Body: " + resp.String())
-	// }
+	if resp.IsError() {
+		log.Info("Status Code:" + resp.Status())
+		log.Info("HTTP Error: " + resp.Status())
+		log.Info("Response Body: " + resp.String())
+	}
 	return nil
 }
