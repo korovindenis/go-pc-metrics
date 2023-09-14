@@ -88,7 +88,7 @@ func (s *Server) SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.M
 	var sumCounter int64
 	for _, val := range metrics {
 		if val.MType == "counter" {
-			sumCounter += int64(*val.Delta)
+			sumCounter += *val.Delta
 		}
 	}
 	for key, val := range metrics {
