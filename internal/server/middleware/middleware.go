@@ -15,7 +15,6 @@ import (
 // check GET or POST
 func CheckMethod() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		if c.Request.Method != http.MethodPost && c.Request.Method != http.MethodGet {
 			c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
 			return
@@ -36,12 +35,24 @@ func GzipMiddleware() gin.HandlerFunc {
 			reader, err := gzip.NewReader(safe)
 			if err == nil {
 				isGzip = true
-				requestBody, _ = ioutil.ReadAll(reader)
+				var buf bytes.Buffer
+				if _, err := buf.ReadFrom(reader); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Gzip data"})
+					c.Abort()
+					return
+				}
+				requestBody = buf.Bytes()
 			}
 		}
 
 		if !isGzip {
-			requestBody, _ = ioutil.ReadAll(safe)
+			var buf bytes.Buffer
+			if _, err := buf.ReadFrom(safe); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Error reading request body"})
+				c.Abort()
+				return
+			}
+			requestBody = buf.Bytes()
 		}
 
 		c.Request.Body.Close()
