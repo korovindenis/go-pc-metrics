@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -137,7 +136,7 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	var requestBodyBuffer bytes.Buffer
 	teeReader := io.TeeReader(c.Request.Body, &requestBodyBuffer)
 
-	requestBody, _ := ioutil.ReadAll(teeReader)
+	requestBody, _ := io.ReadAll(teeReader)
 	defer c.Request.Body.Close()
 	//fmt.Println("Request Body:", string(requestBody))
 
