@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
+
 	"net/http"
 	"strings"
 
@@ -57,7 +57,7 @@ func GzipMiddleware() gin.HandlerFunc {
 
 		c.Request.Body.Close()
 		bf := bytes.NewBuffer(requestBody)
-		c.Request.Body = http.MaxBytesReader(c.Writer, ioutil.NopCloser(bf), maxMemory)
+		c.Request.Body = http.MaxBytesReader(c.Writer, io.NopCloser(bf), maxMemory)
 
 		c.Next()
 	}
