@@ -3,11 +3,13 @@ package postgresql
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"github.com/lib/pq"
 	"github.com/pressly/goose"
 	"go.uber.org/zap/zapcore"
 )
@@ -53,18 +55,71 @@ func (s *Storage) runMigrations() error {
 	return nil
 }
 
+// func (s *Storage) SaveAllData(ctx context.Context, metrics []entity.Metrics) error {
+// 	var err error
+// 	tx, err := s.db.Begin()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	for _, v := range metrics {
+// 		switch v.MType {
+// 		case "gauge":
+// 			_, err = tx.ExecContext(ctx, `INSERT INTO gauge (name, value) VALUES ($1, $2)`, v.ID, v.Value)
+// 		case "counter":
+// 			_, err = tx.ExecContext(ctx, `INSERT INTO counter (name, delta) VALUES ($1, $2)`, v.ID, v.Delta)
+// 		default:
+// 			tx.Rollback()
+// 			return entity.ErrInputVarIsWrongType
+// 		}
+// 		if err != nil {
+// 			tx.Rollback()
+// 			return err
+// 		}
+// 	}
+// 	return tx.Commit()
+// }
+
 func (s *Storage) SaveAllData(ctx context.Context, metrics []entity.Metrics) error {
+	const maxRetries = 3
+	var retryDelays = []time.Duration{1 * time.Second, 3 * time.Second, 5 * time.Second}
+
 	var err error
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
+
+	retryableExec := func(query string, args ...interface{}) error {
+		for i := 0; i <= maxRetries; i++ {
+			if i > 0 {
+				// Waiting before trying again
+				time.Sleep(retryDelays[i-1])
+			}
+
+			_, err = tx.ExecContext(ctx, query, args...)
+			if err == nil {
+				return nil // Successful execution
+			}
+
+			// Checking for a unique violation (UniqueViolation)
+			pgErr, ok := err.(*pq.Error)
+			if ok && pgErr.Code == "23505" {
+				continue
+			}
+
+			return err
+		}
+		return errors.New("max retries exceeded")
+	}
+
 	for _, v := range metrics {
 		switch v.MType {
 		case "gauge":
-			_, err = tx.ExecContext(ctx, `INSERT INTO gauge (name, value) VALUES ($1, $2)`, v.ID, v.Value)
+			query := `INSERT INTO gauge (name, value) VALUES ($1, $2)`
+			err = retryableExec(query, v.ID, v.Value)
 		case "counter":
-			_, err = tx.ExecContext(ctx, `INSERT INTO counter (name, delta) VALUES ($1, $2)`, v.ID, v.Delta)
+			query := `INSERT INTO counter (name, delta) VALUES ($1, $2)`
+			err = retryableExec(query, v.ID, v.Delta)
 		default:
 			tx.Rollback()
 			return entity.ErrInputVarIsWrongType
@@ -74,6 +129,7 @@ func (s *Storage) SaveAllData(ctx context.Context, metrics []entity.Metrics) err
 			return err
 		}
 	}
+
 	return tx.Commit()
 }
 

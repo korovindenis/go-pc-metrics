@@ -138,7 +138,6 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 
 	requestBody, _ := io.ReadAll(teeReader)
 	defer c.Request.Body.Close()
-	//fmt.Println("Request Body:", string(requestBody))
 
 	if err := json.Unmarshal(requestBody, &metrics); err != nil {
 		fmt.Println("Error decoding JSON:", err)
@@ -147,11 +146,6 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	}
 	fmt.Println("Request Metrics:", string(requestBody))
 
-	// if err := json.NewDecoder(c.Request.Body).Decode(&metrics); err != nil {
-	// 	fmt.Println("Error decoding JSON:", err)
-	// 	c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
-	// 	return
-	// }
 	if err := s.serverUsecase.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
 		fmt.Println(err)
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)

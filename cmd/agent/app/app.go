@@ -139,7 +139,6 @@ func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, me
 		SetHeader("Accept-Encoding", "gzip").
 		SetHeader("Content-Length", strconv.Itoa(compressedBody.Len())).
 		SetBody(compressedBody.Bytes()).
-		//SetBody(jsonBody).
 		EnableTrace().
 		Post(httpServerAddress + "/updates/")
 
