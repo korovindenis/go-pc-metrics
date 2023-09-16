@@ -3,7 +3,6 @@ package memory
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	"go.uber.org/zap/zapcore"
@@ -40,8 +39,6 @@ func (m *Storage) SaveGauge(ctx context.Context, gaugeName string, gaugeValue fl
 }
 
 func (m *Storage) GetGauge(ctx context.Context, gaugeName string) (float64, error) {
-	fmt.Println("Storage All data" + fmt.Sprintf("%+v", m.MetricsType.Gauge))
-
 	val, ok := m.MetricsType.Gauge[gaugeName]
 	if !ok {
 		return val, entity.ErrMetricNotFound

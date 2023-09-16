@@ -22,6 +22,11 @@ const (
 	ExitWithError
 )
 
+const (
+	Bd   = "database"
+	Disk = "disk"
+)
+
 func main() {
 	// init config (flags and env)
 	cfg, err := config.New()
@@ -40,9 +45,9 @@ func main() {
 	// init storage
 	var storage any
 	switch cfg.GetStorageType() {
-	case "database":
+	case Bd:
 		storage, err = database.New(cfg, logger.Log)
-	case "disk":
+	case Disk:
 		storage, err = disk.New(cfg, logger.Log)
 	default:
 		storage, err = memory.New(cfg, logger.Log)

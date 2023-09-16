@@ -9,6 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	Bd   = "database"
+	Disk = "disk"
+)
+
 type configAdapter struct {
 	restore                  bool
 	storeInterval            int
@@ -38,10 +43,10 @@ func New() (*configAdapter, error) {
 		return nil, err
 	}
 	if rootCmd.Flags().Changed("file_storage_path") {
-		adapter.storageType = "disk"
+		adapter.storageType = Disk
 	}
 	if rootCmd.Flags().Changed("database_dsn") {
-		adapter.storageType = "database"
+		adapter.storageType = Bd
 	}
 
 	// if env var not empty
@@ -57,7 +62,7 @@ func New() (*configAdapter, error) {
 	}
 	if fileStoragePath, err := getEnvVariable("FILE_STORAGE_PATH"); err == nil {
 		adapter.fileStoragePath = fileStoragePath
-		adapter.storageType = "disk"
+		adapter.storageType = Disk
 	}
 	if restore, err := getEnvVariable("RESTORE"); err == nil {
 		adapter.restore, err = strconv.ParseBool(restore)
@@ -67,7 +72,7 @@ func New() (*configAdapter, error) {
 	}
 	if databaseConnectionString, err := getEnvVariable("DATABASE_DSN"); err == nil {
 		adapter.databaseConnectionString = databaseConnectionString
-		adapter.storageType = "database"
+		adapter.storageType = Bd
 	}
 	return &adapter, nil
 }

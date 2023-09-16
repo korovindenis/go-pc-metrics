@@ -30,10 +30,6 @@ type usecase interface {
 	Ping(ctx context.Context) error
 }
 
-// type usecasesWithBd interface {
-// 	SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.Metrics) error
-// }
-
 type Handler struct {
 	serverUsecase usecase
 }
@@ -140,11 +136,9 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	defer c.Request.Body.Close()
 
 	if err := json.Unmarshal(requestBody, &metrics); err != nil {
-		fmt.Println("Error decoding JSON:", err)
 		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 		return
 	}
-	fmt.Println("Request Metrics:", string(requestBody))
 
 	if err := s.serverUsecase.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
 		fmt.Println(err)
@@ -181,8 +175,6 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 
 	switch metrics.MType {
 	case "gauge":
-		fmt.Println("Handler  data" + fmt.Sprintf("%+v", metrics))
-
 		// get metric
 		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(ctx, metrics.ID)
 		if err != nil {

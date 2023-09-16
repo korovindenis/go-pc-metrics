@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -12,6 +11,10 @@ import (
 	"github.com/lib/pq"
 	"github.com/pressly/goose"
 	"go.uber.org/zap/zapcore"
+)
+
+const (
+	UniqueViolation = "unique_violation"
 )
 
 type Storage struct {
@@ -55,87 +58,31 @@ func (s *Storage) runMigrations() error {
 	return nil
 }
 
-// func (s *Storage) SaveAllData(ctx context.Context, metrics []entity.Metrics) error {
-// 	var err error
-// 	tx, err := s.db.Begin()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	for _, v := range metrics {
-// 		switch v.MType {
-// 		case "gauge":
-// 			_, err = tx.ExecContext(ctx, `INSERT INTO gauge (name, value) VALUES ($1, $2)`, v.ID, v.Value)
-// 		case "counter":
-// 			_, err = tx.ExecContext(ctx, `INSERT INTO counter (name, delta) VALUES ($1, $2)`, v.ID, v.Delta)
-// 		default:
-// 			tx.Rollback()
-// 			return entity.ErrInputVarIsWrongType
-// 		}
-// 		if err != nil {
-// 			tx.Rollback()
-// 			return err
-// 		}
-// 	}
-// 	return tx.Commit()
-// }
-
 func (s *Storage) SaveAllData(ctx context.Context, metrics []entity.Metrics) error {
-	const maxRetries = 3
-	var retryDelays = []time.Duration{1 * time.Second, 3 * time.Second, 5 * time.Second}
-
 	var err error
-	tx, err := s.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	retryableExec := func(query string, args ...interface{}) error {
-		for i := 0; i <= maxRetries; i++ {
-			if i > 0 {
-				// Waiting before trying again
-				time.Sleep(retryDelays[i-1])
-			}
-
-			_, err = tx.ExecContext(ctx, query, args...)
-			if err == nil {
-				return nil // Successful execution
-			}
-
-			// Checking for a unique violation (UniqueViolation)
-			pgErr, ok := err.(*pq.Error)
-			if ok && pgErr.Code == "23505" {
-				continue
-			}
-
-			return err
-		}
-		return errors.New("max retries exceeded")
-	}
 
 	for _, v := range metrics {
 		switch v.MType {
 		case "gauge":
-			query := `INSERT INTO gauge (name, value) VALUES ($1, $2)`
-			err = retryableExec(query, v.ID, v.Value)
+			query := "INSERT INTO gauge (name, value) VALUES ($1,$2)"
+			err = s.retryableExec(ctx, query, v.ID, v.Value)
 		case "counter":
-			query := `INSERT INTO counter (name, delta) VALUES ($1, $2)`
-			err = retryableExec(query, v.ID, v.Delta)
+			query := "INSERT INTO counter (name, delta) VALUES ($1,$2)"
+			err = s.retryableExec(ctx, query, v.ID, v.Delta)
 		default:
-			tx.Rollback()
 			return entity.ErrInputVarIsWrongType
 		}
 		if err != nil {
-			tx.Rollback()
 			return err
 		}
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (s *Storage) SaveGauge(ctx context.Context, gaugeName string, gaugeValue float64) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO gauge (name, value) VALUES ($1, $2)`, gaugeName, gaugeValue)
-	if err != nil {
+	query := "INSERT INTO gauge (name, value) VALUES ($1, $2)"
+	if err := s.retryableExec(ctx, query, gaugeName, gaugeValue); err != nil {
 		return err
 	}
 	return nil
@@ -145,20 +92,17 @@ func (s *Storage) GetGauge(ctx context.Context, gaugeName string) (float64, erro
 	var gaugeValue float64
 	err := s.db.QueryRowContext(ctx, "SELECT value FROM gauge WHERE name = $1 ORDER BY id DESC", gaugeName).Scan(&gaugeValue)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return 0, entity.ErrMetricNotFound
-		} else {
-			return 0, err
 		}
+		return 0, err
 	}
-	formattedValue := fmt.Sprintf("%.15f", gaugeValue)
-	fmt.Println(formattedValue)
 	return gaugeValue, nil
 }
 
 func (s *Storage) SaveCounter(ctx context.Context, counterName string, counterValue int64) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO counter (name, delta) VALUES ($1, $2);`, counterName, counterValue)
-	if err != nil {
+	query := "INSERT INTO counter (name, delta) VALUES ($1, $2)"
+	if err := s.retryableExec(ctx, query, counterName, counterValue); err != nil {
 		return err
 	}
 	return nil
@@ -235,4 +179,42 @@ func (s *Storage) Ping(ctx context.Context) error {
 	defer cancel()
 
 	return s.db.PingContext(ctx)
+}
+
+func (s *Storage) retryableExec(ctx context.Context, query string, args ...any) error {
+	const maxRetries = 3
+	var retryDelays = []time.Duration{1 * time.Second, 3 * time.Second, 5 * time.Second}
+	var pqError *pq.Error
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for i := 0; i <= maxRetries; i++ {
+		if i > 0 {
+			// Waiting before trying again
+			time.Sleep(retryDelays[i-1])
+		}
+
+		if _, err = stmt.ExecContext(ctx, args...); err != nil {
+			// Checking for a unique violation (UniqueViolation)
+			if errors.As(err, &pqError) {
+				if pqError.Code.Name() == UniqueViolation {
+					continue
+				}
+			}
+
+			return err
+		}
+		return tx.Commit() // Successful execution
+	}
+	return errors.New("max retries exceeded")
 }

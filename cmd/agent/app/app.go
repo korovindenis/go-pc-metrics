@@ -123,7 +123,7 @@ func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, me
 		return fmt.Errorf("error in Marshal: %s", err)
 	}
 
-	fmt.Println("Send Metrics:", string(jsonBody))
+	log.Info("Send Metrics: " + string(jsonBody))
 
 	var compressedBody bytes.Buffer
 	gz := gzip.NewWriter(&compressedBody)
