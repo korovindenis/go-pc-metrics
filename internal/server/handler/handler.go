@@ -47,6 +47,7 @@ func (s *Handler) ReceptionMetric(c *gin.Context) {
 	if c.GetHeader("Content-Type") == "application/json" {
 		// get metric from body
 		if err := c.ShouldBindJSON(&metrics); err != nil {
+			c.Error(fmt.Errorf("%s %w", "ReceptionMetric Json", err))
 			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 			return
 		}
@@ -59,6 +60,7 @@ func (s *Handler) ReceptionMetric(c *gin.Context) {
 		if c.Param("metricType") == "counter" {
 			metricVal, err := strconv.ParseInt(c.Param("metricVal"), 10, 64)
 			if err != nil {
+				c.Error(fmt.Errorf("%s %w", "ReceptionMetric ParseInt", err))
 				c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
 				return
 			}
@@ -68,6 +70,7 @@ func (s *Handler) ReceptionMetric(c *gin.Context) {
 		if c.Param("metricType") == "gauge" {
 			metricVal, err := strconv.ParseFloat(c.Param("metricVal"), 64)
 			if err != nil {
+				c.Error(fmt.Errorf("%s %w", "ReceptionMetric ParseFloat", err))
 				c.AbortWithError(http.StatusBadRequest, entity.ErrInputVarIsWrongType)
 				return
 			}
@@ -87,12 +90,18 @@ func (s *Handler) ReceptionMetric(c *gin.Context) {
 	case "gauge":
 		// save metric
 		if err := s.serverUsecase.SaveGaugeUsecase(ctx, metrics.ID, *metrics.Value); err != nil {
+			c.Error(fmt.Errorf("%s %w", "ReceptionMetric SaveGaugeUsecase", err))
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
 
 		// show actual metrics
-		gaugeVal, _ := s.serverUsecase.GetGaugeUsecase(ctx, metrics.ID)
+		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(ctx, metrics.ID)
+		if err != nil {
+			c.Error(fmt.Errorf("%s %w", "ReceptionMetric GetGaugeUsecase", err))
+			c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+			return
+		}
 		metrics.Value = &gaugeVal
 		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
@@ -102,12 +111,18 @@ func (s *Handler) ReceptionMetric(c *gin.Context) {
 	case "counter":
 		// save metric
 		if err := s.serverUsecase.SaveCounterUsecase(ctx, metrics.ID, *metrics.Delta); err != nil {
+			c.Error(fmt.Errorf("%s %w", "ReceptionMetric SaveCounterUsecase", err))
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
 
 		// show actual metrics
-		counterVal, _ := s.serverUsecase.GetCounterUsecase(ctx, metrics.ID)
+		counterVal, err := s.serverUsecase.GetCounterUsecase(ctx, metrics.ID)
+		if err != nil {
+			c.Error(fmt.Errorf("%s %w", "ReceptionMetric GetCounterUsecase", err))
+			c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+			return
+		}
 		metrics.Delta = &counterVal
 		if c.Param("metricType") == "" {
 			c.JSON(http.StatusOK, metrics)
@@ -136,12 +151,13 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	defer c.Request.Body.Close()
 
 	if err := json.Unmarshal(requestBody, &metrics); err != nil {
+		c.Error(fmt.Errorf("%s %w", "ReceptionMetrics Unmarshal", err))
 		c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 		return
 	}
 
 	if err := s.serverUsecase.SaveAllDataBatchUsecase(ctx, metrics); err != nil {
-		fmt.Println(err)
+		c.Error(fmt.Errorf("%s %w", "ReceptionMetrics SaveAllDataBatchUsecase", err))
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return
 	}
@@ -156,6 +172,7 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 	if c.Param("metricType") == "" {
 		// get metric from body
 		if err := c.ShouldBindJSON(&metrics); err != nil {
+			c.Error(fmt.Errorf("%s %w", "OutputMetric ShouldBindJSON", err))
 			c.JSON(http.StatusBadRequest, entity.ErrInvalidURLFormat)
 			return
 		}
@@ -179,9 +196,11 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 		gaugeVal, err := s.serverUsecase.GetGaugeUsecase(ctx, metrics.ID)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
+				c.Error(fmt.Errorf("%s %w", "OutputMetric GetGaugeUsecase ErrMetricNotFound", err))
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
 				return
 			}
+			c.Error(fmt.Errorf("%s %w", "OutputMetric GetGaugeUsecase", err))
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
@@ -198,9 +217,11 @@ func (s *Handler) OutputMetric(c *gin.Context) {
 		counterVal, err := s.serverUsecase.GetCounterUsecase(ctx, metrics.ID)
 		if err != nil {
 			if errors.Is(err, entity.ErrMetricNotFound) {
+				c.Error(fmt.Errorf("%s %w", "OutputMetric GetCounterUsecase ErrInputMetricNotFound", err))
 				c.AbortWithError(http.StatusNotFound, entity.ErrInputMetricNotFound)
 				return
 			}
+			c.Error(fmt.Errorf("%s %w", "OutputMetric GetCounterUsecase", err))
 			c.AbortWithError(http.StatusNotImplemented, entity.ErrNotImplementedServerError)
 			return
 		}
@@ -222,6 +243,7 @@ func (s *Handler) OutputAllMetrics(c *gin.Context) {
 	ctx := c.Request.Context()
 	data, err := s.serverUsecase.GetAllDataUsecase(ctx)
 	if err != nil {
+		c.Error(fmt.Errorf("%s %w", "OutputAllMetrics GetAllDataUsecase", err))
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return
 	}
@@ -232,6 +254,7 @@ func (s *Handler) OutputAllMetrics(c *gin.Context) {
 
 func (s *Handler) Ping(c *gin.Context) {
 	if err := s.serverUsecase.Ping(c.Request.Context()); err != nil {
+		c.Error(fmt.Errorf("%s %w", "Ping", err))
 		c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
 		return
 	}

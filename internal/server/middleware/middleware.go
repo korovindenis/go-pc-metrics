@@ -10,7 +10,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
+
+type log interface {
+	Error(msg string, fields ...zapcore.Field)
+}
 
 // check GET or POST
 func CheckMethod() gin.HandlerFunc {
@@ -20,6 +26,16 @@ func CheckMethod() gin.HandlerFunc {
 			return
 		}
 		c.Next()
+	}
+}
+
+func ErrorLoggingMiddleware(log log) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+
+		if len(c.Errors) > 0 {
+			log.Error("Error: ", zap.Error(c.Errors[0].Err))
+		}
 	}
 }
 

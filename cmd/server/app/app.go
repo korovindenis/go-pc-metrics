@@ -24,6 +24,7 @@ type cfg interface {
 // logger functions
 type log interface {
 	Info(msg string, fields ...zapcore.Field)
+	Error(msg string, fields ...zapcore.Field)
 }
 
 // server main
@@ -36,8 +37,9 @@ func Run(cfg cfg, handler serverHandler, log log) error {
 
 	// middleware
 	router.Use(logger.RequestLogger())
-	router.Use(middleware.CheckMethod())
 	router.Use(gin.Recovery())
+	router.Use(middleware.CheckMethod())
+	router.Use(middleware.ErrorLoggingMiddleware(log))
 	router.Use(middleware.GzipMiddleware())
 	router.Use(middleware.GzipResponseMiddleware())
 
