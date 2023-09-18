@@ -5,18 +5,26 @@ import (
 	"log"
 	"os"
 
-	storage "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/disk"
+	"github.com/korovindenis/go-pc-metrics/cmd/server/app"
+	"github.com/korovindenis/go-pc-metrics/internal/adapters/storage/disk"
+	"github.com/korovindenis/go-pc-metrics/internal/adapters/storage/memory"
+	database "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/postgresql"
+	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecases/server"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/server/config"
 	serverhandler "github.com/korovindenis/go-pc-metrics/internal/server/handler"
-	serverapp "github.com/korovindenis/go-pc-metrics/internal/server/serverapp"
 	"go.uber.org/zap"
 )
 
 const (
 	ExitSucces = iota
 	ExitWithError
+)
+
+const (
+	Bd   = "database"
+	Disk = "disk"
 )
 
 func main() {
@@ -34,15 +42,24 @@ func main() {
 		os.Exit(ExitWithError)
 	}
 
-	// init bd
-	storage, err := storage.New(cfg)
+	// init storage
+	var storage any
+	switch cfg.GetStorageType() {
+	case Bd:
+		storage, err = database.New(cfg, logger.Log)
+	case Disk:
+		storage, err = disk.New(cfg, logger.Log)
+	default:
+		storage, err = memory.New(cfg, logger.Log)
+	}
+
 	if err != nil {
-		logger.Log.Error("init bd", zap.Error(err))
+		logger.Log.Error("init storage", zap.Error(err))
 		os.Exit(ExitWithError)
 	}
 
 	// init usecases
-	serverUsecase, err := serverusecase.New(storage)
+	serverUsecase, err := serverusecase.New(storage, cfg)
 	if err != nil {
 		logger.Log.Error("init usecases", zap.Error(err))
 		os.Exit(ExitWithError)
@@ -55,14 +72,16 @@ func main() {
 		os.Exit(ExitWithError)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	// Cancel the context when main() is terminated
-	defer cancel()
 	// save to file
-	go serverUsecase.SaveAllDataUsecase(cfg, ctx)
+	if cfg.GetStorageType() == "disk" {
+		ctx, cancel := context.WithCancel(context.Background())
+		// Cancel the context when main() is terminated
+		defer cancel()
+		go serverUsecase.SaveAllDataUsecase(ctx, []entity.Metrics{})
+	}
 
 	// run web server
-	if err := serverapp.Exec(cfg, serverHandler, logger.Log); err != nil {
+	if err := app.Run(cfg, serverHandler, logger.Log); err != nil {
 		logger.Log.Error("run web server", zap.Error(err))
 		os.Exit(ExitWithError)
 	}

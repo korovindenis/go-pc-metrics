@@ -1,17 +1,27 @@
 package memory
 
 import (
+	"context"
+	"errors"
+
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"go.uber.org/zap/zapcore"
 )
 
 type Storage struct {
 	MetricsType entity.MetricsType
 }
 
+type log interface {
+	Info(msg string, fields ...zapcore.Field)
+}
+
 type cfg interface {
 }
 
-func New(config cfg) (*Storage, error) {
+func New(config cfg, log log) (*Storage, error) {
+	log.Info("Storage is memory")
+
 	storage := Storage{
 		MetricsType: entity.MetricsType{
 			Gauge:   make(map[string]float64),
@@ -22,13 +32,13 @@ func New(config cfg) (*Storage, error) {
 	return &storage, nil
 }
 
-func (m *Storage) SaveGauge(gaugeName string, gaugeValue float64) error {
+func (m *Storage) SaveGauge(ctx context.Context, gaugeName string, gaugeValue float64) error {
 	m.MetricsType.Gauge[gaugeName] = gaugeValue
 
 	return nil
 }
 
-func (m *Storage) GetGauge(gaugeName string) (float64, error) {
+func (m *Storage) GetGauge(ctx context.Context, gaugeName string) (float64, error) {
 	val, ok := m.MetricsType.Gauge[gaugeName]
 	if !ok {
 		return val, entity.ErrMetricNotFound
@@ -36,13 +46,13 @@ func (m *Storage) GetGauge(gaugeName string) (float64, error) {
 	return val, nil
 }
 
-func (m *Storage) SaveCounter(counterName string, counterValue int64) error {
+func (m *Storage) SaveCounter(ctx context.Context, counterName string, counterValue int64) error {
 	m.MetricsType.Counter[counterName] = counterValue
 
 	return nil
 }
 
-func (m *Storage) GetCounter(counterName string) (int64, error) {
+func (m *Storage) GetCounter(ctx context.Context, counterName string) (int64, error) {
 	val, ok := m.MetricsType.Counter[counterName]
 	if !ok {
 		return val, entity.ErrMetricNotFound
@@ -51,10 +61,24 @@ func (m *Storage) GetCounter(counterName string) (int64, error) {
 
 }
 
-func (m *Storage) GetAllData() (entity.MetricsType, error) {
+func (m *Storage) GetAllData(ctx context.Context) (entity.MetricsType, error) {
 	return m.MetricsType, nil
 }
 
-func (m *Storage) SaveAllData() error {
+func (m *Storage) SaveAllData(ctx context.Context, metrics []entity.Metrics) error {
+	for _, metric := range metrics {
+		switch metric.MType {
+		case "gauge":
+			m.MetricsType.Gauge[metric.ID] = *metric.Value
+		case "counter":
+			m.MetricsType.Counter[metric.ID] = *metric.Delta
+		default:
+			return errors.New("sendMetrics(): metricsVal not recognized")
+		}
+	}
+	return nil
+}
+
+func (m *Storage) Ping(ctx context.Context) error {
 	return nil
 }

@@ -1,4 +1,4 @@
-package agentapp
+package app
 
 import (
 	"bytes"
@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	"go.uber.org/zap/zapcore"
 )
@@ -35,8 +36,9 @@ type config interface {
 }
 
 // agent main
-func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
-	restClient := &http.Client{}
+func Run(agentUsecase agentUsecase, log logger, cfg config) error {
+	restClient := resty.New()
+	//restClient.SetDebug(true)
 
 	httpServerAddress := cfg.GetServerAddressWithScheme()
 
@@ -62,6 +64,7 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 			if err != nil {
 				return fmt.Errorf("agentapp Exec GetGauge: %s", err)
 			}
+
 			err = sendMetrics(restClient, gaugeVal, log, httpServerAddress)
 			if err != nil {
 				return fmt.Errorf("agentapp Exec sendMetrics: %s", err)
@@ -79,71 +82,74 @@ func Exec(agentUsecase agentUsecase, log logger, cfg config) error {
 }
 
 // prepare data
-func sendMetrics(restClient *http.Client, metricsVal any, log logger, httpServerAddress string) error {
+func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServerAddress string) error {
+	var metrics []entity.Metrics
+
 	switch v := metricsVal.(type) {
 	case entity.GaugeType:
 		_ = v // for go vet
 		for name, value := range metricsVal.(entity.GaugeType) {
-			metrics := entity.Metrics{
+			floatValue := new(float64)
+			*floatValue = value
+			metrics = append(metrics, entity.Metrics{
 				ID:    name,
 				MType: "gauge",
-				Value: &value,
-			}
-			if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
-				return fmt.Errorf("sendMetrics entity.GaugeType: %s", err)
-			}
+				Value: floatValue,
+			})
 		}
 	case entity.CounterType:
 		for name, value := range metricsVal.(entity.CounterType) {
-			metrics := entity.Metrics{
+			metrics = append(metrics, entity.Metrics{
 				ID:    name,
 				MType: "counter",
 				Delta: &value,
-			}
-			if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
-				return fmt.Errorf("sendMetrics entity.CounterType: %s", err)
-			}
+			})
 		}
 	default:
 		return errors.New("sendMetrics(): metricsVal not recognized")
 	}
 
+	if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
+		return fmt.Errorf("sendMetrics entity.CounterType: %s", err)
+	}
 	return nil
 }
 
 // send data
-func httpReq(restClient *http.Client, log logger, httpServerAddress string, metrics entity.Metrics) error {
+func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, metrics []entity.Metrics) error {
+
 	jsonBody, err := json.Marshal(metrics)
 	if err != nil {
-		return fmt.Errorf("err in Marshal: %s", err)
+		return fmt.Errorf("error in Marshal: %s", err)
 	}
+
+	log.Info("Send Metrics: " + string(jsonBody))
 
 	var compressedBody bytes.Buffer
 	gz := gzip.NewWriter(&compressedBody)
-
 	_, err = gz.Write(jsonBody)
 	if err != nil {
-		return fmt.Errorf("err in gz Write: %s", err)
+		return fmt.Errorf("error in gz Write: %s", err)
 	}
-
 	gz.Close()
 
-	req, err := http.NewRequest("POST", httpServerAddress+"/update/", &compressedBody)
+	resp, err := restyClient.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Accept-Encoding", "gzip").
+		SetHeader("Content-Length", strconv.Itoa(compressedBody.Len())).
+		SetBody(compressedBody.Bytes()).
+		EnableTrace().
+		Post(httpServerAddress + "/updates/")
+
 	if err != nil {
-		return fmt.Errorf("err in NewRequest: %s", err)
+		log.Info(fmt.Sprintf("error in httpclient: %s", err))
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Content-Encoding", "gzip")
-	req.Header.Set("Accept-Encoding", "gzip")
-
-	resp, err := restClient.Do(req)
-	if err != nil {
-		log.Info(fmt.Sprintf("err in httpclient: %s", err))
-	} else {
-		defer resp.Body.Close()
-		log.Info("Status Code:" + resp.Status)
+	if resp.IsError() {
+		log.Info("Status Code:" + resp.Status())
+		log.Info("HTTP Error: " + resp.Status())
+		log.Info("Response Body: " + resp.String())
 	}
-
 	return nil
 }

@@ -1,19 +1,26 @@
 package middleware
 
 import (
+	"bytes"
 	"compress/gzip"
 	"io"
+
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
+
+type log interface {
+	Error(msg string, fields ...zapcore.Field)
+}
 
 // check GET or POST
 func CheckMethod() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		if c.Request.Method != http.MethodPost && c.Request.Method != http.MethodGet {
 			c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
 			return
@@ -22,18 +29,52 @@ func CheckMethod() gin.HandlerFunc {
 	}
 }
 
-func GzipMiddleware() gin.HandlerFunc {
+func ErrorLoggingMiddleware(log log) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if strings.Contains(c.GetHeader("Content-Encoding"), "gzip") {
-			reader, err := gzip.NewReader(c.Request.Body)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Gzip data"})
+		c.Next()
+
+		if len(c.Errors) > 0 {
+			log.Error("Error: ", zap.Error(c.Errors[0].Err))
+		}
+	}
+}
+
+func GzipMiddleware() gin.HandlerFunc {
+	var maxMemory int64 = 64 << 20 // 64 MB
+
+	return func(c *gin.Context) {
+		var requestBody []byte
+		isGzip := false
+		safe := &io.LimitedReader{R: c.Request.Body, N: maxMemory}
+
+		if c.GetHeader("Content-Encoding") == "gzip" {
+			reader, err := gzip.NewReader(safe)
+			if err == nil {
+				isGzip = true
+				var buf bytes.Buffer
+				if _, err := buf.ReadFrom(reader); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Gzip data"})
+					c.Abort()
+					return
+				}
+				requestBody = buf.Bytes()
+			}
+		}
+
+		if !isGzip {
+			var buf bytes.Buffer
+			if _, err := buf.ReadFrom(safe); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Error reading request body"})
 				c.Abort()
 				return
 			}
-			defer reader.Close()
-			c.Request.Body = http.MaxBytesReader(c.Writer, reader, c.Request.ContentLength)
+			requestBody = buf.Bytes()
 		}
+
+		c.Request.Body.Close()
+		bf := bytes.NewBuffer(requestBody)
+		c.Request.Body = http.MaxBytesReader(c.Writer, io.NopCloser(bf), maxMemory)
+
 		c.Next()
 	}
 }

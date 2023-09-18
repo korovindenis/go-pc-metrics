@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	agent "github.com/korovindenis/go-pc-metrics/internal/agent/agentapp"
+	"github.com/korovindenis/go-pc-metrics/cmd/agent/app"
 	"github.com/korovindenis/go-pc-metrics/internal/agent/config"
 	agentUsecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecases/agent"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
@@ -39,7 +39,7 @@ func main() {
 	}
 
 	// run agent
-	if err := agent.Exec(agentUsecase, logger.Log, cfg); err != nil {
+	if err := app.Run(agentUsecase, logger.Log, cfg); err != nil {
 		logger.Log.Error("run agent", zap.Error(err))
 		os.Exit(ExitWithError)
 	}

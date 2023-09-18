@@ -9,12 +9,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	Bd   = "database"
+	Disk = "disk"
+)
+
 type configAdapter struct {
-	httpAddress     string
-	logsLevel       string
-	storeInterval   int
-	fileStoragePath string
-	restore         bool
+	restore                  bool
+	storeInterval            int
+	httpAddress              string
+	logsLevel                string
+	databaseConnectionString string
+	fileStoragePath          string
+	storageType              string
 }
 
 func New() (*configAdapter, error) {
@@ -30,9 +37,16 @@ func New() (*configAdapter, error) {
 	rootCmd.Flags().IntVarP(&adapter.storeInterval, "store_interval", "i", 300, "Interval for save data to disk")
 	rootCmd.Flags().StringVarP(&adapter.fileStoragePath, "file_storage_path", "f", "./tmp/metrics-db.json", "Log file path")
 	rootCmd.Flags().BoolVarP(&adapter.restore, "restore", "r", true, "Load prev. data from file")
+	rootCmd.Flags().StringVarP(&adapter.databaseConnectionString, "database_dsn", "d", "host=127.0.0.1 user=go password=go dbname=go sslmode=disable", "Database connection string")
 
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
+	}
+	if rootCmd.Flags().Changed("file_storage_path") {
+		adapter.storageType = Disk
+	}
+	if rootCmd.Flags().Changed("database_dsn") {
+		adapter.storageType = Bd
 	}
 
 	// if env var not empty
@@ -41,13 +55,24 @@ func New() (*configAdapter, error) {
 		adapter.httpAddress = envHTTPAddress
 	}
 	if storeInterval, err := getEnvVariable("STORE_INTERVAL"); err == nil {
-		adapter.storeInterval, _ = strconv.Atoi(storeInterval)
+		adapter.storeInterval, err = strconv.Atoi(storeInterval)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if fileStoragePath, err := getEnvVariable("FILE_STORAGE_PATH"); err == nil {
 		adapter.fileStoragePath = fileStoragePath
+		adapter.storageType = Disk
 	}
 	if restore, err := getEnvVariable("RESTORE"); err == nil {
-		adapter.restore, _ = strconv.ParseBool(restore)
+		adapter.restore, err = strconv.ParseBool(restore)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if databaseConnectionString, err := getEnvVariable("DATABASE_DSN"); err == nil {
+		adapter.databaseConnectionString = databaseConnectionString
+		adapter.storageType = Bd
 	}
 	return &adapter, nil
 }
@@ -77,6 +102,14 @@ func (f *configAdapter) GetFileStoragePath() string {
 
 func (f *configAdapter) GetRestore() bool {
 	return f.restore
+}
+
+func (f *configAdapter) GetDatabaseConnectionString() string {
+	return f.databaseConnectionString
+}
+
+func (f *configAdapter) GetStorageType() string {
+	return f.storageType
 }
 
 func getEnvVariable(varName string) (string, error) {

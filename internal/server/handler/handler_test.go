@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,37 +19,52 @@ type mockServerUsecase struct {
 	mock.Mock
 }
 
-func (m *mockServerUsecase) SaveGaugeUsecase(gaugeName string, gaugeValue float64) error {
+func (m *mockServerUsecase) SaveAllDataUsecase(ctx context.Context, metrics []entity.Metrics) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *mockServerUsecase) SaveGaugeUsecase(ctx context.Context, gaugeName string, gaugeValue float64) error {
 	args := m.Called(gaugeName, gaugeValue)
 	return args.Error(0)
 }
 
-func (m *mockServerUsecase) SaveCounterUsecase(counterName string, counterValue int64) error {
+func (m *mockServerUsecase) SaveCounterUsecase(ctx context.Context, counterName string, counterValue int64) error {
 	args := m.Called(counterName, counterValue)
 	return args.Error(0)
 }
 
-func (m *mockServerUsecase) GetGaugeUsecase(gaugeName string) (float64, error) {
+func (m *mockServerUsecase) GetGaugeUsecase(ctx context.Context, gaugeName string) (float64, error) {
 	args := m.Called(gaugeName)
 	return args.Get(0).(float64), args.Error(1)
 }
 
-func (m *mockServerUsecase) GetCounterUsecase(counterName string) (int64, error) {
+func (m *mockServerUsecase) GetCounterUsecase(ctx context.Context, counterName string) (int64, error) {
 	args := m.Called(counterName)
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (m *mockServerUsecase) GetAllDataUsecase() (entity.MetricsType, error) {
+func (m *mockServerUsecase) GetAllDataUsecase(ctx context.Context) (entity.MetricsType, error) {
 	args := m.Called()
 	return args.Get(0).(entity.MetricsType), args.Error(1)
 }
 
-func TestReceptionMetrics(t *testing.T) {
+func (m *mockServerUsecase) Ping(ctx context.Context) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *mockServerUsecase) SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.Metrics) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func TestReceptionMetric(t *testing.T) {
 	mockUsecase := new(mockServerUsecase)
 	handler, _ := New(mockUsecase)
 
 	router := gin.Default()
-	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetrics)
+	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetric)
 
 	// t.Run("SaveGauge Success", func(t *testing.T) {
 	// 	mockUsecase.On("SaveGaugeUsecase", "OtherSys", 471728.0).Return(nil).Once()
