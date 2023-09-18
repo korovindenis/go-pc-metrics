@@ -1,36 +1,40 @@
 package logger
 
 import (
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-// for singletone
-var Log *zap.Logger = zap.NewNop()
+var logger *zap.Logger
+var once sync.Once
 
 type cfg interface {
 	GetLogsLevel() string
 }
 
-func New(config cfg) error {
-	lvl, err := zap.ParseAtomicLevel(config.GetLogsLevel())
-	if err != nil {
-		return err
-	}
-	cfg := zap.NewProductionConfig()
-	cfg.Level = lvl
+func New(config cfg) (*zap.Logger, error) {
+	// for singletone
+	once.Do(func() {
+		lvl, err := zap.ParseAtomicLevel(config.GetLogsLevel())
+		if err != nil {
+			panic(err)
+		}
+		cfg := zap.NewProductionConfig()
+		cfg.Level = lvl
 
-	zl, err := cfg.Build()
-	if err != nil {
-		return err
-	}
-	defer zl.Sync()
+		zl, err := cfg.Build()
+		if err != nil {
+			panic(err)
+		}
+		defer zl.Sync()
 
-	Log = zl
+		logger = zl
+	})
 
-	return nil
+	return logger, nil
 }
 
 func RequestLogger() gin.HandlerFunc {
@@ -42,7 +46,7 @@ func RequestLogger() gin.HandlerFunc {
 
 		endTime := time.Now()
 
-		Log.With(
+		logger.With(
 			zap.Any("HTTP REQUEST", struct {
 				METHOD  string
 				URI     string

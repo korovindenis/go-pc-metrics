@@ -11,7 +11,7 @@ import (
 	database "github.com/korovindenis/go-pc-metrics/internal/adapters/storage/postgresql"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 	serverusecase "github.com/korovindenis/go-pc-metrics/internal/domain/usecases/server"
-	"github.com/korovindenis/go-pc-metrics/internal/logger"
+	customLogger "github.com/korovindenis/go-pc-metrics/internal/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/server/config"
 	serverhandler "github.com/korovindenis/go-pc-metrics/internal/server/handler"
 	"go.uber.org/zap"
@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// init logger
-	err = logger.New(cfg)
+	logger, err := customLogger.New(cfg)
 	if err != nil {
 		log.Println(err)
 		os.Exit(ExitWithError)
@@ -46,29 +46,29 @@ func main() {
 	var storage any
 	switch cfg.GetStorageType() {
 	case Bd:
-		storage, err = database.New(cfg, logger.Log)
+		storage, err = database.New(cfg, logger)
 	case Disk:
-		storage, err = disk.New(cfg, logger.Log)
+		storage, err = disk.New(cfg, logger)
 	default:
-		storage, err = memory.New(cfg, logger.Log)
+		storage, err = memory.New(cfg, logger)
 	}
 
 	if err != nil {
-		logger.Log.Error("init storage", zap.Error(err))
+		logger.Error("init storage", zap.Error(err))
 		os.Exit(ExitWithError)
 	}
 
 	// init usecases
 	serverUsecase, err := serverusecase.New(storage, cfg)
 	if err != nil {
-		logger.Log.Error("init usecases", zap.Error(err))
+		logger.Error("init usecases", zap.Error(err))
 		os.Exit(ExitWithError)
 	}
 
 	// init handlers
 	serverHandler, err := serverhandler.New(serverUsecase)
 	if err != nil {
-		logger.Log.Error("init handlers", zap.Error(err))
+		logger.Error("init handlers", zap.Error(err))
 		os.Exit(ExitWithError)
 	}
 
@@ -81,8 +81,8 @@ func main() {
 	}
 
 	// run web server
-	if err := app.Run(cfg, serverHandler, logger.Log); err != nil {
-		logger.Log.Error("run web server", zap.Error(err))
+	if err := app.Run(cfg, serverHandler, logger); err != nil {
+		logger.Error("run web server", zap.Error(err))
 		os.Exit(ExitWithError)
 	}
 	os.Exit(ExitSucces)
