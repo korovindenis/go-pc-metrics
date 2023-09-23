@@ -57,8 +57,7 @@ func Gzip() gin.HandlerFunc {
 				isGzip = true
 				var buf bytes.Buffer
 				if _, err := buf.ReadFrom(reader); err != nil {
-					c.JSON(http.StatusBadRequest, entity.ErrInvalidGzipData)
-					c.Abort()
+					c.AbortWithError(http.StatusBadRequest, entity.ErrInvalidGzipData)
 					return
 				}
 				requestBody = buf.Bytes()
@@ -68,8 +67,7 @@ func Gzip() gin.HandlerFunc {
 		if !isGzip {
 			var buf bytes.Buffer
 			if _, err := buf.ReadFrom(safe); err != nil {
-				c.JSON(http.StatusBadRequest, entity.ErrReadingRequestBody)
-				c.Abort()
+				c.AbortWithError(http.StatusBadRequest, entity.ErrReadingRequestBody)
 				return
 			}
 			requestBody = buf.Bytes()
@@ -112,11 +110,11 @@ func SetSign(secretKey string) gin.HandlerFunc {
 			c.AbortWithError(http.StatusInternalServerError, entity.ErrReadingRequestBody)
 			return
 		}
-		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 
 		serverHashSHA256, _ := computeHMAC(body, secretKey)
 		c.Writer.Header().Set("HashSHA256", serverHashSHA256)
 
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 		c.Next()
 	}
 }
@@ -132,7 +130,6 @@ func CheckSign(log log, secretKey string) gin.HandlerFunc {
 		var buf bytes.Buffer
 		tee := io.TeeReader(c.Request.Body, &buf)
 		body, _ := io.ReadAll(tee)
-		c.Request.Body = io.NopCloser(bytes.NewReader(body))
 
 		serverHashSHA256, _ := computeHMAC(body, secretKey)
 
@@ -145,6 +142,7 @@ func CheckSign(log log, secretKey string) gin.HandlerFunc {
 			return
 		}
 
+		c.Request.Body = io.NopCloser(bytes.NewReader(body))
 		c.Next()
 	}
 }
