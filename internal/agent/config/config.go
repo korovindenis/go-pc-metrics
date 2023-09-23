@@ -14,6 +14,7 @@ type configAdapter struct {
 	pollInterval   int
 	httpAddress    string
 	logsLevel      string
+	key            string
 }
 
 func New() (*configAdapter, error) {
@@ -28,6 +29,7 @@ func New() (*configAdapter, error) {
 	rootCmd.Flags().StringVarP(&adapter.logsLevel, "logs", "l", "info", "log level")
 	rootCmd.Flags().IntVarP(&adapter.reportInterval, "report", "r", 10, "Metrics report interval")
 	rootCmd.Flags().IntVarP(&adapter.pollInterval, "poll", "p", 2, "Metrics poll interval")
+	rootCmd.Flags().StringVarP(&adapter.key, "key", "k", "", "Key string")
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
 	}
@@ -48,6 +50,9 @@ func New() (*configAdapter, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+	if envKey, err := getEnvVariable("KEY"); err == nil {
+		adapter.key = envKey
 	}
 	return &adapter, nil
 }
@@ -70,6 +75,10 @@ func (f *configAdapter) GetPollInterval() time.Duration {
 
 func (f *configAdapter) GetLogsLevel() string {
 	return f.logsLevel
+}
+
+func (f *configAdapter) GetKey() string {
+	return f.key
 }
 
 func getEnvVariable(varName string) (string, error) {

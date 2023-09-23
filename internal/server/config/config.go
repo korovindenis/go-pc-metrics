@@ -22,6 +22,7 @@ type configAdapter struct {
 	databaseConnectionString string
 	fileStoragePath          string
 	storageType              string
+	key                      string
 }
 
 func New() (*configAdapter, error) {
@@ -38,6 +39,7 @@ func New() (*configAdapter, error) {
 	rootCmd.Flags().StringVarP(&adapter.fileStoragePath, "file_storage_path", "f", "./tmp/metrics-db.json", "Log file path")
 	rootCmd.Flags().BoolVarP(&adapter.restore, "restore", "r", true, "Load prev. data from file")
 	rootCmd.Flags().StringVarP(&adapter.databaseConnectionString, "database_dsn", "d", "host=127.0.0.1 user=go password=go dbname=go sslmode=disable", "Database connection string")
+	rootCmd.Flags().StringVarP(&adapter.key, "key", "k", "", "Key string")
 
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
@@ -73,6 +75,9 @@ func New() (*configAdapter, error) {
 	if databaseConnectionString, err := getEnvVariable("DATABASE_DSN"); err == nil {
 		adapter.databaseConnectionString = databaseConnectionString
 		adapter.storageType = Bd
+	}
+	if envKey, err := getEnvVariable("KEY"); err == nil {
+		adapter.key = envKey
 	}
 	return &adapter, nil
 }
@@ -110,6 +115,10 @@ func (f *configAdapter) GetDatabaseConnectionString() string {
 
 func (f *configAdapter) GetStorageType() string {
 	return f.storageType
+}
+
+func (f *configAdapter) GetKey() string {
+	return f.key
 }
 
 func getEnvVariable(varName string) (string, error) {
