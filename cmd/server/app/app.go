@@ -45,8 +45,10 @@ func Run(cfg cfg, handler serverHandler, log log) error {
 	router.Use(middleware.Gzip())
 	router.Use(middleware.GzipResponse())
 	if secretKey != "" {
-		router.Use(middleware.SetSign(secretKey))
-		router.Use(middleware.CheckSign(log, secretKey))
+		const patternSign = `^/updates?/$`
+
+		router.Use(middleware.SetSign(secretKey, patternSign))
+		router.Use(middleware.CheckSign(log, secretKey, patternSign))
 	}
 
 	// routes

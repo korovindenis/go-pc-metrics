@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
+	"regexp"
 
 	"net/http"
 	"strings"
@@ -103,9 +104,9 @@ func GzipResponse() gin.HandlerFunc {
 	}
 }
 
-func SetSign(secretKey string) gin.HandlerFunc {
+func SetSign(secretKey, patternSign string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.FullPath() != "/update/" {
+		if !regexp.MustCompile(patternSign).MatchString(c.FullPath()) {
 			c.Next()
 			return
 		}
@@ -124,9 +125,9 @@ func SetSign(secretKey string) gin.HandlerFunc {
 	}
 }
 
-func CheckSign(log log, secretKey string) gin.HandlerFunc {
+func CheckSign(log log, secretKey, patternSign string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.FullPath() != "/update/" {
+		if !regexp.MustCompile(patternSign).MatchString(c.FullPath()) {
 			c.Next()
 			return
 		}
