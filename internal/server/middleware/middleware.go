@@ -106,19 +106,16 @@ func GzipResponse() gin.HandlerFunc {
 
 func SetSign(secretKey, patternSign string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !regexp.MustCompile(patternSign).MatchString(c.FullPath()) {
-			c.Next()
-			return
-		}
 
 		body, err := io.ReadAll(c.Request.Body)
 		if err != nil {
 			c.AbortWithError(http.StatusInternalServerError, entity.ErrReadingRequestBody)
 			return
 		}
-
-		serverHashSHA256, _ := computeHMAC(body, secretKey)
-		c.Writer.Header().Set("HashSHA256", serverHashSHA256)
+		if regexp.MustCompile(patternSign).MatchString(c.FullPath()) {
+			serverHashSHA256, _ := computeHMAC(body, secretKey)
+			c.Writer.Header().Set("HashSHA256", serverHashSHA256)
+		}
 
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 		c.Next()
@@ -127,11 +124,6 @@ func SetSign(secretKey, patternSign string) gin.HandlerFunc {
 
 func CheckSign(log log, secretKey, patternSign string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !regexp.MustCompile(patternSign).MatchString(c.FullPath()) {
-			c.Next()
-			return
-		}
-
 		clientHashSHA256 := c.GetHeader("HashSHA256")
 		if clientHashSHA256 == "" {
 			c.AbortWithError(http.StatusBadRequest, entity.ErrStatusBadRequest)
@@ -144,7 +136,7 @@ func CheckSign(log log, secretKey, patternSign string) gin.HandlerFunc {
 
 		serverHashSHA256, _ := computeHMAC(body, secretKey)
 
-		if clientHashSHA256 != serverHashSHA256 {
+		if regexp.MustCompile(patternSign).MatchString(c.FullPath()) && clientHashSHA256 != serverHashSHA256 {
 			log.Info("Client HashSHA256: " + clientHashSHA256)
 			log.Info("Server HashSHA256: " + serverHashSHA256)
 			log.Error("Check sign was failed")
