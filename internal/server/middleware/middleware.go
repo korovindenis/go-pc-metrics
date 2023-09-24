@@ -105,6 +105,11 @@ func GzipResponse() gin.HandlerFunc {
 
 func SetSign(secretKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if c.FullPath() != "/update/" {
+			c.Next()
+			return
+		}
+
 		body, err := io.ReadAll(c.Request.Body)
 		if err != nil {
 			c.AbortWithError(http.StatusInternalServerError, entity.ErrReadingRequestBody)
@@ -121,6 +126,11 @@ func SetSign(secretKey string) gin.HandlerFunc {
 
 func CheckSign(log log, secretKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if c.FullPath() != "/update/" {
+			c.Next()
+			return
+		}
+
 		clientHashSHA256 := c.GetHeader("HashSHA256")
 		if clientHashSHA256 == "" {
 			c.AbortWithError(http.StatusBadRequest, entity.ErrStatusBadRequest)
