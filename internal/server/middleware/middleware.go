@@ -125,10 +125,10 @@ func SetSign(secretKey, patternSign string) gin.HandlerFunc {
 func CheckSign(log log, secretKey, patternSign string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		clientHashSHA256 := c.GetHeader("HashSHA256")
-		//if clientHashSHA256 == "" {
-		//	c.AbortWithError(http.StatusBadRequest, entity.ErrStatusBadRequest)
-		//	return
-		//}
+		if clientHashSHA256 == "" {
+			c.AbortWithError(http.StatusBadRequest, entity.ErrStatusBadRequest)
+			return
+		}
 
 		var buf bytes.Buffer
 		tee := io.TeeReader(c.Request.Body, &buf)
