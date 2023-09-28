@@ -5,6 +5,8 @@ import (
 	"runtime"
 
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type Agent struct {
@@ -32,35 +34,49 @@ func (a *Agent) UpdateCounter() error {
 func (a *Agent) UpdateGauge() error {
 	runtime.ReadMemStats(&a.runtime)
 
+	memInfo, err := mem.VirtualMemory()
+	if err != nil {
+		return err
+	}
+
+	cpuInfo, err := cpu.Percent(0, false)
+	if err != nil {
+		return err
+
+	}
+
 	a.metrics.Gauge = entity.GaugeType{
-		"Alloc":         float64(a.runtime.Alloc),
-		"BuckHashSys":   float64(a.runtime.BuckHashSys),
-		"Frees":         float64(a.runtime.Frees),
-		"GCCPUFraction": a.runtime.GCCPUFraction,
-		"GCSys":         float64(a.runtime.GCSys),
-		"HeapAlloc":     float64(a.runtime.HeapAlloc),
-		"HeapIdle":      float64(a.runtime.HeapIdle),
-		"HeapInuse":     float64(a.runtime.HeapInuse),
-		"HeapObjects":   float64(a.runtime.HeapObjects),
-		"HeapReleased":  float64(a.runtime.HeapReleased),
-		"HeapSys":       float64(a.runtime.HeapSys),
-		"LastGC":        float64(a.runtime.LastGC),
-		"Lookups":       float64(a.runtime.Lookups),
-		"MCacheSys":     float64(a.runtime.MCacheSys),
-		"MSpanInuse":    float64(a.runtime.MSpanInuse),
-		"MCacheInuse":   float64(a.runtime.MSpanInuse),
-		"MSpanSys":      float64(a.runtime.MSpanSys),
-		"Mallocs":       float64(a.runtime.Mallocs),
-		"NextGC":        float64(a.runtime.NextGC),
-		"NumForcedGC":   float64(a.runtime.NumForcedGC),
-		"NumGC":         float64(a.runtime.NumGC),
-		"OtherSys":      float64(a.runtime.OtherSys),
-		"PauseTotalNs":  float64(a.runtime.PauseTotalNs),
-		"StackInuse":    float64(a.runtime.StackInuse),
-		"StackSys":      float64(a.runtime.StackSys),
-		"Sys":           float64(a.runtime.Sys),
-		"TotalAlloc":    float64(a.runtime.TotalAlloc),
-		"RandomValue":   rand.Float64(),
+		"Alloc":            float64(a.runtime.Alloc),
+		"BuckHashSys":      float64(a.runtime.BuckHashSys),
+		"Frees":            float64(a.runtime.Frees),
+		"GCCPUFraction":    a.runtime.GCCPUFraction,
+		"GCSys":            float64(a.runtime.GCSys),
+		"HeapAlloc":        float64(a.runtime.HeapAlloc),
+		"HeapIdle":         float64(a.runtime.HeapIdle),
+		"HeapInuse":        float64(a.runtime.HeapInuse),
+		"HeapObjects":      float64(a.runtime.HeapObjects),
+		"HeapReleased":     float64(a.runtime.HeapReleased),
+		"HeapSys":          float64(a.runtime.HeapSys),
+		"LastGC":           float64(a.runtime.LastGC),
+		"Lookups":          float64(a.runtime.Lookups),
+		"MCacheSys":        float64(a.runtime.MCacheSys),
+		"MSpanInuse":       float64(a.runtime.MSpanInuse),
+		"MCacheInuse":      float64(a.runtime.MSpanInuse),
+		"MSpanSys":         float64(a.runtime.MSpanSys),
+		"Mallocs":          float64(a.runtime.Mallocs),
+		"NextGC":           float64(a.runtime.NextGC),
+		"NumForcedGC":      float64(a.runtime.NumForcedGC),
+		"NumGC":            float64(a.runtime.NumGC),
+		"OtherSys":         float64(a.runtime.OtherSys),
+		"PauseTotalNs":     float64(a.runtime.PauseTotalNs),
+		"StackInuse":       float64(a.runtime.StackInuse),
+		"StackSys":         float64(a.runtime.StackSys),
+		"Sys":              float64(a.runtime.Sys),
+		"TotalAlloc":       float64(a.runtime.TotalAlloc),
+		"TotalMemory":      float64(memInfo.Total),
+		"FreeMemory":       float64(memInfo.Free),
+		"CPUutilization1 ": cpuInfo[0],
+		"RandomValue":      rand.Float64(),
 	}
 
 	return nil
