@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -37,52 +38,105 @@ type config interface {
 	GetPollInterval() time.Duration
 	GetReportInterval() time.Duration
 	GetKey() string
+	GetRateLimit() int
+}
+
+type resultWorkerMetric struct {
+	data bool
+	err  error
 }
 
 // agent main
-func Run(agentUsecase agentUsecase, log logger, cfg config) error {
-	restClient := resty.New()
-	//restClient.SetDebug(true)
+func Run(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config) error {
+	rateLimitCh := make(chan bool, cfg.GetRateLimit())
+	resultCh := make(chan resultWorkerMetric)
 
-	httpServerAddress := cfg.GetServerAddressWithScheme()
+	go updateWorker(ctx, agentUsecase, log, cfg, resultCh)
+	go sendWorker(ctx, agentUsecase, log, cfg, resultCh, rateLimitCh)
 
+	for res := range resultCh {
+		if res.err != nil {
+			return fmt.Errorf("agentapp Exec updateWorker: %s", res.err)
+		}
+	}
+
+	return nil
+}
+
+func updateWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config, resultCh chan resultWorkerMetric) {
 	updateTicker := time.NewTicker(cfg.GetPollInterval())
 	defer updateTicker.Stop()
-
-	sendTicker := time.NewTicker(cfg.GetReportInterval())
-	defer sendTicker.Stop()
-
-	secretKey := cfg.GetKey()
+	defer close(resultCh)
 
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case <-updateTicker.C:
 			log.Info("update metrics")
 			if err := agentUsecase.UpdateGauge(); err != nil {
-				return fmt.Errorf("agentapp Exec UpdateGauge: %s", err)
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
 			}
 			if err := agentUsecase.UpdateCounter(); err != nil {
-				return fmt.Errorf("agentapp Exec UpdateCounter: %s", err)
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
 			}
+			resultCh <- resultWorkerMetric{
+				data: true,
+			}
+		}
+	}
+}
+
+func sendWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config, resultCh chan resultWorkerMetric, rateLimitCh chan bool) {
+	restClient := resty.New()
+	httpServerAddress := cfg.GetServerAddressWithScheme()
+	sendTicker := time.NewTicker(cfg.GetReportInterval())
+	secretKey := cfg.GetKey()
+	defer sendTicker.Stop()
+	defer close(resultCh)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
 		case <-sendTicker.C:
+			// for limit request
+			rateLimitCh <- true
+
 			log.Info("send metrics")
 			gaugeVal, err := agentUsecase.GetGauge()
 			if err != nil {
-				return fmt.Errorf("agentapp Exec GetGauge: %s", err)
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
 			}
-
 			err = sendMetrics(restClient, gaugeVal, log, httpServerAddress, secretKey)
 			if err != nil {
-				return fmt.Errorf("agentapp Exec sendMetrics: %s", err)
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
 			}
 			counterVal, err := agentUsecase.GetCounter()
 			if err != nil {
-				return fmt.Errorf("agentapp Exec GetCounter: %s", err)
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
 			}
 			err = sendMetrics(restClient, counterVal, log, httpServerAddress, secretKey)
 			if err != nil {
-				return fmt.Errorf("agentapp Exec sendMetrics: %s", err)
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
 			}
+			resultCh <- resultWorkerMetric{
+				data: true,
+			}
+
+			<-rateLimitCh
 		}
 	}
 }

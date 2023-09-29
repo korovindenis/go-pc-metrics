@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -39,7 +40,9 @@ func main() {
 	}
 
 	// run agent
-	if err := app.Run(agentUsecase, logger, cfg); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := app.Run(ctx, agentUsecase, logger, cfg); err != nil {
 		logger.Error("run agent", zap.Error(err))
 		os.Exit(ExitWithError)
 	}

@@ -15,7 +15,7 @@ type configAdapter struct {
 	httpAddress    string
 	logsLevel      string
 	key            string
-	rateLimit      float64
+	rateLimit      int
 }
 
 func New() (*configAdapter, error) {
@@ -31,7 +31,7 @@ func New() (*configAdapter, error) {
 	rootCmd.Flags().IntVarP(&adapter.reportInterval, "report", "r", 10, "Metrics report interval")
 	rootCmd.Flags().IntVarP(&adapter.pollInterval, "poll", "p", 2, "Metrics poll interval")
 	rootCmd.Flags().StringVarP(&adapter.key, "key", "k", "", "Key string")
-	rootCmd.Flags().Float64VarP(&adapter.rateLimit, "limit", "l", 1, "Limit http reg")
+	rootCmd.Flags().IntVarP(&adapter.rateLimit, "limit", "l", 1, "Limit http reg")
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func New() (*configAdapter, error) {
 		adapter.key = envKey
 	}
 	if rateLimit, err := getEnvVariable("RATE_LIMIT"); err == nil {
-		adapter.rateLimit, err = strconv.ParseFloat(rateLimit, 64)
+		adapter.rateLimit, err = strconv.Atoi(rateLimit)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func (f *configAdapter) GetKey() string {
 	return f.key
 }
 
-func (f *configAdapter) GetRateLimit() float64 {
+func (f *configAdapter) GetRateLimit() int {
 	return f.rateLimit
 }
 
