@@ -48,11 +48,11 @@ type resultWorkerMetric struct {
 
 // agent main
 func Run(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config) error {
-	rateLimitCh := make(chan bool, cfg.GetRateLimit())
 	resultCh := make(chan resultWorkerMetric)
+	defer close(resultCh)
 
 	go updateWorker(ctx, agentUsecase, log, cfg, resultCh)
-	go sendWorker(ctx, agentUsecase, log, cfg, resultCh, rateLimitCh)
+	go sendWorker(ctx, agentUsecase, log, cfg, resultCh)
 
 	for res := range resultCh {
 		if res.err != nil {
@@ -63,10 +63,9 @@ func Run(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config)
 	return nil
 }
 
-func updateWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config, resultCh chan resultWorkerMetric) {
+func updateWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config, resultCh chan<- resultWorkerMetric) {
 	updateTicker := time.NewTicker(cfg.GetPollInterval())
 	defer updateTicker.Stop()
-	defer close(resultCh)
 
 	for {
 		select {
@@ -91,22 +90,18 @@ func updateWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cf
 	}
 }
 
-func sendWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config, resultCh chan resultWorkerMetric, rateLimitCh chan bool) {
+func sendWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config, resultCh chan<- resultWorkerMetric) {
 	restClient := resty.New()
 	httpServerAddress := cfg.GetServerAddressWithScheme()
 	sendTicker := time.NewTicker(cfg.GetReportInterval())
 	secretKey := cfg.GetKey()
 	defer sendTicker.Stop()
-	defer close(resultCh)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-sendTicker.C:
-			// for limit request
-			rateLimitCh <- true
-
 			log.Info("send metrics")
 			gaugeVal, err := agentUsecase.GetGauge()
 			if err != nil {
@@ -135,8 +130,6 @@ func sendWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg 
 			resultCh <- resultWorkerMetric{
 				data: true,
 			}
-
-			<-rateLimitCh
 		}
 	}
 }
