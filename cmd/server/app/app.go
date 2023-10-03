@@ -19,6 +19,7 @@ type serverHandler interface {
 // config functions
 type cfg interface {
 	GetServerAddress() string
+	GetKey() string
 }
 
 // logger functions
@@ -29,6 +30,7 @@ type log interface {
 
 // server main
 func Run(cfg cfg, handler serverHandler, log log) error {
+	secretKey := cfg.GetKey()
 	httpAddress := cfg.GetServerAddress()
 	router := gin.Default()
 
@@ -39,9 +41,15 @@ func Run(cfg cfg, handler serverHandler, log log) error {
 	router.Use(logger.RequestLogger())
 	router.Use(gin.Recovery())
 	router.Use(middleware.CheckMethod())
-	router.Use(middleware.ErrorLoggingMiddleware(log))
-	router.Use(middleware.GzipMiddleware())
-	router.Use(middleware.GzipResponseMiddleware())
+	router.Use(middleware.ErrorLogging(log))
+	router.Use(middleware.Gzip())
+	router.Use(middleware.GzipResponse())
+	if secretKey != "" {
+		const patternSign = `^/updates?/$`
+
+		router.Use(middleware.SetSign(secretKey, patternSign))
+		router.Use(middleware.CheckSign(log, secretKey, patternSign))
+	}
 
 	// routes
 	router.GET("/", handler.OutputAllMetrics)

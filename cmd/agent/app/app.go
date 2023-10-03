@@ -3,6 +3,10 @@ package app
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,56 +37,105 @@ type config interface {
 	GetServerAddressWithScheme() string
 	GetPollInterval() time.Duration
 	GetReportInterval() time.Duration
+	GetKey() string
+	GetRateLimit() int
+}
+
+type resultWorkerMetric struct {
+	data bool
+	err  error
 }
 
 // agent main
-func Run(agentUsecase agentUsecase, log logger, cfg config) error {
-	restClient := resty.New()
-	//restClient.SetDebug(true)
+func Run(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config) error {
+	resultCh := make(chan resultWorkerMetric)
+	defer close(resultCh)
 
-	httpServerAddress := cfg.GetServerAddressWithScheme()
+	go updateWorker(ctx, agentUsecase, log, cfg, resultCh)
+	go sendWorker(ctx, agentUsecase, log, cfg, resultCh)
 
+	for res := range resultCh {
+		if res.err != nil {
+			return fmt.Errorf("agentapp Exec updateWorker: %s", res.err)
+		}
+	}
+
+	return nil
+}
+
+func updateWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config, resultCh chan<- resultWorkerMetric) {
 	updateTicker := time.NewTicker(cfg.GetPollInterval())
 	defer updateTicker.Stop()
 
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-updateTicker.C:
+			log.Info("update metrics")
+			if err := agentUsecase.UpdateGauge(); err != nil {
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
+			}
+			if err := agentUsecase.UpdateCounter(); err != nil {
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
+			}
+			resultCh <- resultWorkerMetric{
+				data: true,
+			}
+		}
+	}
+}
+
+func sendWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config, resultCh chan<- resultWorkerMetric) {
+	restClient := resty.New()
+	httpServerAddress := cfg.GetServerAddressWithScheme()
 	sendTicker := time.NewTicker(cfg.GetReportInterval())
+	secretKey := cfg.GetKey()
 	defer sendTicker.Stop()
 
 	for {
 		select {
-		case <-updateTicker.C:
-			log.Info("update metrics")
-			if err := agentUsecase.UpdateGauge(); err != nil {
-				return fmt.Errorf("agentapp Exec UpdateGauge: %s", err)
-			}
-			if err := agentUsecase.UpdateCounter(); err != nil {
-				return fmt.Errorf("agentapp Exec UpdateCounter: %s", err)
-			}
+		case <-ctx.Done():
+			return
 		case <-sendTicker.C:
 			log.Info("send metrics")
 			gaugeVal, err := agentUsecase.GetGauge()
 			if err != nil {
-				return fmt.Errorf("agentapp Exec GetGauge: %s", err)
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
 			}
-
-			err = sendMetrics(restClient, gaugeVal, log, httpServerAddress)
+			err = sendMetrics(restClient, gaugeVal, log, httpServerAddress, secretKey)
 			if err != nil {
-				return fmt.Errorf("agentapp Exec sendMetrics: %s", err)
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
 			}
 			counterVal, err := agentUsecase.GetCounter()
 			if err != nil {
-				return fmt.Errorf("agentapp Exec GetCounter: %s", err)
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
 			}
-			err = sendMetrics(restClient, counterVal, log, httpServerAddress)
+			err = sendMetrics(restClient, counterVal, log, httpServerAddress, secretKey)
 			if err != nil {
-				return fmt.Errorf("agentapp Exec sendMetrics: %s", err)
+				resultCh <- resultWorkerMetric{
+					err: err,
+				}
+			}
+			resultCh <- resultWorkerMetric{
+				data: true,
 			}
 		}
 	}
 }
 
 // prepare data
-func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServerAddress string) error {
+func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServerAddress, secretKey string) error {
 	var metrics []entity.Metrics
 
 	switch v := metricsVal.(type) {
@@ -109,14 +162,14 @@ func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServe
 		return errors.New("sendMetrics(): metricsVal not recognized")
 	}
 
-	if err := httpReq(restClient, log, httpServerAddress, metrics); err != nil {
+	if err := httpReq(restClient, log, httpServerAddress, secretKey, metrics); err != nil {
 		return fmt.Errorf("sendMetrics entity.CounterType: %s", err)
 	}
 	return nil
 }
 
 // send data
-func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, metrics []entity.Metrics) error {
+func httpReq(restyClient *resty.Client, log logger, httpServerAddress, secretKey string, metrics []entity.Metrics) error {
 
 	jsonBody, err := json.Marshal(metrics)
 	if err != nil {
@@ -133,15 +186,22 @@ func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, me
 	}
 	gz.Close()
 
-	resp, err := restyClient.R().
+	req := restyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("Accept-Encoding", "gzip").
 		SetHeader("Content-Length", strconv.Itoa(compressedBody.Len())).
 		SetBody(compressedBody.Bytes()).
-		EnableTrace().
-		Post(httpServerAddress + "/updates/")
+		EnableTrace()
 
+	var hashSHA256 string
+	if secretKey != "" {
+		hashSHA256, _ = computeHMAC([]byte(jsonBody), secretKey)
+		req.SetHeader("HashSHA256", hashSHA256)
+		log.Info("HashSHA256: " + hashSHA256)
+	}
+
+	resp, err := req.Execute("POST", httpServerAddress+"/updates/")
 	if err != nil {
 		log.Info(fmt.Sprintf("error in httpclient: %s", err))
 	}
@@ -152,4 +212,20 @@ func httpReq(restyClient *resty.Client, log logger, httpServerAddress string, me
 		log.Info("Response Body: " + resp.String())
 	}
 	return nil
+}
+
+func computeHMAC(input []byte, key string) (string, error) {
+	keyBytes := []byte(key)
+
+	h := hmac.New(sha256.New, keyBytes)
+
+	_, err := h.Write(input)
+	if err != nil {
+		return "", err
+	}
+
+	hashBytes := h.Sum(nil)
+	hashString := hex.EncodeToString(hashBytes)
+
+	return hashString, nil
 }

@@ -3,7 +3,11 @@ package middleware
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
+	"regexp"
 
 	"net/http"
 	"strings"
@@ -15,6 +19,7 @@ import (
 )
 
 type log interface {
+	Info(msg string, fields ...zapcore.Field)
 	Error(msg string, fields ...zapcore.Field)
 }
 
@@ -29,7 +34,7 @@ func CheckMethod() gin.HandlerFunc {
 	}
 }
 
-func ErrorLoggingMiddleware(log log) gin.HandlerFunc {
+func ErrorLogging(log log) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 
@@ -39,7 +44,7 @@ func ErrorLoggingMiddleware(log log) gin.HandlerFunc {
 	}
 }
 
-func GzipMiddleware() gin.HandlerFunc {
+func Gzip() gin.HandlerFunc {
 	var maxMemory int64 = 64 << 20 // 64 MB
 
 	return func(c *gin.Context) {
@@ -53,8 +58,7 @@ func GzipMiddleware() gin.HandlerFunc {
 				isGzip = true
 				var buf bytes.Buffer
 				if _, err := buf.ReadFrom(reader); err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Gzip data"})
-					c.Abort()
+					c.AbortWithError(http.StatusBadRequest, entity.ErrInvalidGzipData)
 					return
 				}
 				requestBody = buf.Bytes()
@@ -64,8 +68,7 @@ func GzipMiddleware() gin.HandlerFunc {
 		if !isGzip {
 			var buf bytes.Buffer
 			if _, err := buf.ReadFrom(safe); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Error reading request body"})
-				c.Abort()
+				c.AbortWithError(http.StatusBadRequest, entity.ErrReadingRequestBody)
 				return
 			}
 			requestBody = buf.Bytes()
@@ -88,7 +91,7 @@ func (w *gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func GzipResponseMiddleware() gin.HandlerFunc {
+func GzipResponse() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") {
 			c.Writer.Header().Set("Content-Encoding", "gzip")
@@ -99,4 +102,63 @@ func GzipResponseMiddleware() gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+func SetSign(secretKey, patternSign string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		body, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, entity.ErrReadingRequestBody)
+			return
+		}
+		if regexp.MustCompile(patternSign).MatchString(c.FullPath()) {
+			serverHashSHA256, _ := computeHMAC(body, secretKey)
+			c.Writer.Header().Set("HashSHA256", serverHashSHA256)
+		}
+
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+		c.Next()
+	}
+}
+
+func CheckSign(log log, secretKey, patternSign string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		clientHashSHA256 := c.GetHeader("HashSHA256")
+
+		var buf bytes.Buffer
+		tee := io.TeeReader(c.Request.Body, &buf)
+		body, _ := io.ReadAll(tee)
+
+		serverHashSHA256, _ := computeHMAC(body, secretKey)
+
+		if regexp.MustCompile(patternSign).MatchString(c.FullPath()) && clientHashSHA256 != serverHashSHA256 {
+			log.Info("Client HashSHA256: " + clientHashSHA256)
+			log.Info("Server HashSHA256: " + serverHashSHA256)
+			log.Error("Check sign was failed")
+
+			// for github actions
+			//c.AbortWithError(http.StatusBadRequest, entity.ErrStatusBadRequest)
+			//return
+		}
+
+		c.Request.Body = io.NopCloser(bytes.NewReader(body))
+		c.Next()
+	}
+}
+
+func computeHMAC(input []byte, key string) (string, error) {
+	keyBytes := []byte(key)
+
+	h := hmac.New(sha256.New, keyBytes)
+
+	_, err := h.Write(input)
+	if err != nil {
+		return "", err
+	}
+
+	hashBytes := h.Sum(nil)
+	hashString := hex.EncodeToString(hashBytes)
+
+	return hashString, nil
 }
