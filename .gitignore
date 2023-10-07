@@ -25,5 +25,5 @@ vendor/
 .vscode
 
 /tmp/
-runtest.bat
-TODO.md
+agent
+server
