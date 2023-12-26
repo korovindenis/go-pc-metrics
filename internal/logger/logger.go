@@ -1,3 +1,4 @@
+// Logging of service information
 package logger
 
 import (

@@ -14,7 +14,7 @@ import (
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 )
 
-// function usecase
+//go:generate mockery --name usecase --exported
 type usecase interface {
 	SaveGaugeUsecase(ctx context.Context, gaugeName string, gaugeValue float64) error
 	GetGaugeUsecase(ctx context.Context, gaugeName string) (float64, error)

@@ -1,3 +1,4 @@
+// Storage with RAM
 package memory
 
 import (

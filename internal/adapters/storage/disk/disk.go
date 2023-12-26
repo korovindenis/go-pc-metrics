@@ -1,3 +1,4 @@
+// Storage with file system
 package disk
 
 import (

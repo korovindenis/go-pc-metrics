@@ -1,161 +1,300 @@
 package handler
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"github.com/korovindenis/go-pc-metrics/internal/server/handler/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-// Define a mock for the IServerUsecase interface
-type mockServerUsecase struct {
-	mock.Mock
-}
-
-func (m *mockServerUsecase) SaveAllDataUsecase(ctx context.Context, metrics []entity.Metrics) error {
-	args := m.Called()
-	return args.Error(0)
-}
-
-func (m *mockServerUsecase) SaveGaugeUsecase(ctx context.Context, gaugeName string, gaugeValue float64) error {
-	args := m.Called(gaugeName, gaugeValue)
-	return args.Error(0)
-}
-
-func (m *mockServerUsecase) SaveCounterUsecase(ctx context.Context, counterName string, counterValue int64) error {
-	args := m.Called(counterName, counterValue)
-	return args.Error(0)
-}
-
-func (m *mockServerUsecase) GetGaugeUsecase(ctx context.Context, gaugeName string) (float64, error) {
-	args := m.Called(gaugeName)
-	return args.Get(0).(float64), args.Error(1)
-}
-
-func (m *mockServerUsecase) GetCounterUsecase(ctx context.Context, counterName string) (int64, error) {
-	args := m.Called(counterName)
-	return args.Get(0).(int64), args.Error(1)
-}
-
-func (m *mockServerUsecase) GetAllDataUsecase(ctx context.Context) (entity.MetricsType, error) {
-	args := m.Called()
-	return args.Get(0).(entity.MetricsType), args.Error(1)
-}
-
-func (m *mockServerUsecase) Ping(ctx context.Context) error {
-	args := m.Called()
-	return args.Error(0)
-}
-
-func (m *mockServerUsecase) SaveAllDataBatchUsecase(ctx context.Context, metrics []entity.Metrics) error {
-	args := m.Called()
-	return args.Error(0)
-}
-
-func TestReceptionMetric(t *testing.T) {
-	mockUsecase := new(mockServerUsecase)
-	handler, _ := New(mockUsecase)
-
+func TestHandler_ReceptionMetric(t *testing.T) {
+	usecase := mocks.NewUsecase(t)
+	handler, _ := New(usecase)
 	router := gin.Default()
-	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetric)
+	router.GET("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetric)
 
-	// t.Run("SaveGauge Success", func(t *testing.T) {
-	// 	mockUsecase.On("SaveGaugeUsecase", "OtherSys", 471728.0).Return(nil).Once()
+	tests := []struct {
+		name           string
+		url            string
+		header         http.Header
+		statusCode     int
+		err            error
+		getGaugeErr    error
+		saveGaugeErr   error
+		getCounterErr  error
+		saveCounterErr error
+	}{
+		{
+			name:       "positive getGaugeUsecase",
+			url:        "/update/gauge/OtherSys/471728",
+			statusCode: http.StatusOK,
+		},
+		{
+			name:        "negative getGaugeUsecase",
+			url:         "/update/gauge/OtherSys/471728",
+			statusCode:  http.StatusInternalServerError,
+			getGaugeErr: errors.New("err"),
+		},
+		{
+			name:       "positive saveGaugeUsecase",
+			url:        "/update/gauge/OtherSys/471728",
+			statusCode: http.StatusOK,
+		},
+		{
+			name:         "negative saveGaugeUsecase",
+			url:          "/update/gauge/OtherSys/471728",
+			statusCode:   http.StatusNotImplemented,
+			saveGaugeErr: errors.New("err"),
+		},
+		{
+			name:       "positive getCounterUsecase",
+			url:        "/update/counter/OtherSys/471728",
+			statusCode: http.StatusOK,
+		},
+		{
+			name:          "negative getCounterUsecase",
+			url:           "/update/counter/OtherSys/471728",
+			statusCode:    http.StatusInternalServerError,
+			getCounterErr: errors.New("err"),
+		},
+		{
+			name:       "positive saveCounterUsecase",
+			url:        "/update/counter/OtherSys/471728",
+			statusCode: http.StatusOK,
+		},
+		{
+			name:           "negative saveCounterUsecase",
+			url:            "/update/counter/OtherSys/471728",
+			statusCode:     http.StatusNotImplemented,
+			saveCounterErr: errors.New("err"),
+		},
 
-	// 	w := httptest.NewRecorder()
-	// 	req, _ := http.NewRequest("POST", "/update/gauge/OtherSys/471728", nil)
-	// 	router.ServeHTTP(w, req)
-
-	// 	assert.Equal(t, http.StatusOK, w.Code)
-	// 	mockUsecase.AssertExpectations(t)
-	// })
-
-	t.Run("SaveGauge Wrong Metric Value", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/update/gauge/OtherSys/wrongValue", nil)
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-		mockUsecase.AssertNotCalled(t, "SaveGaugeUsecase")
-	})
-
-	mockUsecase.AssertExpectations(t)
-}
-
-func TestOutputMetric(t *testing.T) {
-	mockUsecase := new(mockServerUsecase)
-	handler, _ := New(mockUsecase)
-
-	router := gin.Default()
-	router.GET("/value/:metricType/:metricName", handler.OutputMetric)
-
-	t.Run("GetGauge Success", func(t *testing.T) {
-		mockUsecase.On("GetGaugeUsecase", "OtherSys").Return(471728.0, nil).Once()
-
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/value/gauge/OtherSys", nil)
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Equal(t, "471728", w.Body.String())
-		mockUsecase.AssertExpectations(t)
-	})
-
-	t.Run("GetGauge Metric Not Found", func(t *testing.T) {
-		mockUsecase.On("GetGaugeUsecase", "InvalidMetric").Return(0.0, entity.ErrMetricNotFound).Once()
-
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/value/gauge/InvalidMetric", nil)
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
-		mockUsecase.AssertExpectations(t)
-	})
-
-	mockUsecase.AssertExpectations(t)
-}
-
-func TestOutputAllMetrics(t *testing.T) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Failed to get current directory: %s", err)
+		{
+			name:       "negative",
+			url:        "/update/gauge/",
+			statusCode: http.StatusMovedPermanently,
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			w := httptest.NewRecorder()
 
-	mockUsecase := new(mockServerUsecase)
-	handler, _ := New(mockUsecase)
+			saveGaugeUsecase := usecase.On("SaveGaugeUsecase", mock.Anything, mock.Anything, mock.Anything).Return(tt.saveGaugeErr).Maybe()
+			getGaugeUsecase := usecase.On("GetGaugeUsecase", mock.Anything, mock.Anything).Return(float64(0), tt.getGaugeErr).Maybe()
+			saveCounterUsecase := usecase.On("SaveCounterUsecase", mock.Anything, mock.Anything, mock.Anything).Return(tt.saveCounterErr).Maybe()
+			getCounterUsecase := usecase.On("GetCounterUsecase", mock.Anything, mock.Anything).Return(int64(0), tt.getCounterErr).Maybe()
+
+			// Act
+			req, err := http.NewRequest(http.MethodGet, tt.url, http.NoBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header = tt.header
+			router.ServeHTTP(w, req)
+
+			// Assert
+			assert.Equal(t, tt.statusCode, w.Code)
+
+			// Unset
+			saveGaugeUsecase.Unset()
+			getGaugeUsecase.Unset()
+			saveCounterUsecase.Unset()
+			getCounterUsecase.Unset()
+		})
+	}
+}
+
+func TestHandler_Ping(t *testing.T) {
+	usecase := mocks.NewUsecase(t)
+	handler, _ := New(usecase)
 	router := gin.Default()
-	router.LoadHTMLGlob(filepath.Dir(currentDir) + "/templates/*")
+	router.GET("/ping", handler.Ping)
 
+	tests := []struct {
+		name       string
+		header     http.Header
+		statusCode int
+		err        error
+	}{
+		{
+			name:       "positive",
+			statusCode: http.StatusOK,
+		},
+		{
+			name:       "negative ",
+			statusCode: http.StatusInternalServerError,
+			err:        errors.New("err"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			w := httptest.NewRecorder()
+
+			ping := usecase.On("Ping", mock.Anything).Return(tt.err).Maybe()
+
+			// Act
+			req, err := http.NewRequest(http.MethodGet, "/ping", http.NoBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header = tt.header
+			router.ServeHTTP(w, req)
+
+			// Assert
+			assert.Equal(t, tt.statusCode, w.Code)
+
+			// Unset
+			ping.Unset()
+		})
+	}
+}
+
+func TestHandler_OutputAllMetrics(t *testing.T) {
+	usecase := mocks.NewUsecase(t)
+	handler, _ := New(usecase)
+	router := gin.Default()
 	router.GET("/", handler.OutputAllMetrics)
 
-	t.Run("GetAllData Success", func(t *testing.T) {
-		mockMetrics := entity.MetricsType{
-			Gauge: map[string]float64{
-				"Metric1": 123.45,
-				"Metric2": 67.89,
+	tests := []struct {
+		name       string
+		statusCode int
+		err        error
+	}{
+		{
+			name:       "negative",
+			statusCode: http.StatusInternalServerError,
+			err:        errors.New("err"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			w := httptest.NewRecorder()
+
+			getAllDataUsecase := usecase.On("GetAllDataUsecase", mock.Anything).Return(entity.MetricsType{Gauge: make(entity.GaugeType), Counter: make(entity.CounterType)}, tt.err).Maybe()
+
+			// Act
+			req, err := http.NewRequest(http.MethodGet, "/", http.NoBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+			router.ServeHTTP(w, req)
+
+			// Assert
+			assert.Equal(t, tt.statusCode, w.Code)
+
+			// Unset
+			getAllDataUsecase.Unset()
+		})
+	}
+}
+
+func TestNew(t *testing.T) {
+	mockUsecase := mocks.NewUsecase(t)
+
+	tests := []struct {
+		name    string
+		u       usecase
+		want    *Handler
+		wantErr bool
+	}{
+		{
+			name: "positive",
+			u:    mockUsecase,
+			want: &Handler{serverUsecase: mockUsecase},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := New(tt.u)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("New() error = %+v, wantErr %+v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("New() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHandler_ReceptionMetrics(t *testing.T) {
+	usecase := mocks.NewUsecase(t)
+	handler, _ := New(usecase)
+	router := gin.Default()
+	router.POST("/updates", handler.ReceptionMetrics)
+
+	tests := []struct {
+		name       string
+		url        string
+		header     http.Header
+		statusCode int
+		err        error
+		args       []entity.Metrics
+	}{
+		{
+			name:       "check content type getGaugeUsecase",
+			statusCode: http.StatusBadRequest,
+		},
+		{
+			name:       "check content type getGaugeUsecase",
+			statusCode: http.StatusOK,
+			header: http.Header{
+				"Content-Type": {"application/json"},
 			},
-			Counter: map[string]int64{
-				"Counter1": 100,
-				"Counter2": 200,
-			},
-		}
-		mockUsecase.On("GetAllDataUsecase").Return(mockMetrics, nil).Once()
+			args: []entity.Metrics{entity.Metrics{}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			args, _ := json.Marshal(tt.args)
+			w := httptest.NewRecorder()
 
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/", nil)
-		router.ServeHTTP(w, req)
+			saveAllDataBatchUsecase := usecase.On("SaveAllDataBatchUsecase", mock.Anything, mock.Anything, mock.Anything).Return(tt.err).Maybe()
 
-		assert.Equal(t, http.StatusOK, w.Code)
-		// Add assertions for response body as needed
-		mockUsecase.AssertExpectations(t)
-	})
+			// Act
+			req, err := http.NewRequest(http.MethodPost, "/updates", bytes.NewBuffer([]byte(args)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header = tt.header
+			router.ServeHTTP(w, req)
 
-	mockUsecase.AssertExpectations(t)
+			// Assert
+			assert.Equal(t, tt.statusCode, w.Code)
+
+			// Unset
+			saveAllDataBatchUsecase.Unset()
+		})
+	}
+}
+
+func TestHandler_OutputMetric(t *testing.T) {
+	type args struct {
+		c *gin.Context
+	}
+	tests := []struct {
+		name string
+		s    *Handler
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.s.OutputMetric(tt.args.c)
+		})
+	}
 }

@@ -1,3 +1,4 @@
+// the business logic of the backend
 package serverusecase
 
 import (
@@ -7,7 +8,7 @@ import (
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
 )
 
-// storage functions
+//go:generate mockery --name storage --exported
 type storage interface {
 	SaveGauge(ctx context.Context, gaugeName string, gaugeValue float64) error
 	GetGauge(ctx context.Context, gaugeName string) (float64, error)
@@ -21,6 +22,7 @@ type storage interface {
 	Ping(ctx context.Context) error
 }
 
+//go:generate mockery --name cfg --exported
 type cfg interface {
 	GetServerAddress() string
 	GetStoreInterval() time.Duration
@@ -39,7 +41,7 @@ func New(s any, config cfg) (*Server, error) {
 
 	return &Server{
 		storage:       storageInstance,
-		storeInterval: config.GetStoreInterval(),
+		storeInterval: time.Duration(1 * time.Second), //config.GetStoreInterval(),
 	}, nil
 }
 
