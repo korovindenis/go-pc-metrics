@@ -328,7 +328,8 @@ func TestServer_SaveAllDataUsecase(t *testing.T) {
 
 			// Unset
 			saveAllData.Unset()
-			cancel()
+
 		})
 	}
+	cancel()
 }
