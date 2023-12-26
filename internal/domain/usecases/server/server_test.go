@@ -298,7 +298,7 @@ func TestServer_SaveAllDataUsecase(t *testing.T) {
 	cfg := mocks.NewCfg(t)
 	storage := mocks.NewStorage(t)
 	server, _ := New(storage, cfg)
-	ctx, _ := context.WithDeadline(context.Background(), time.Now().Local().Add(3*time.Second))
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Local().Add(3*time.Second))
 
 	cfg.On("GetServerAddress").Return("localhost:8080").Maybe()
 	cfg.On("GetStoreInterval").Return(time.Duration(1 * time.Second)).Maybe()
@@ -328,6 +328,7 @@ func TestServer_SaveAllDataUsecase(t *testing.T) {
 
 			// Unset
 			saveAllData.Unset()
+			cancel()
 		})
 	}
 }
