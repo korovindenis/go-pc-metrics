@@ -5,20 +5,20 @@ type (
 	CounterType map[string]int64
 )
 
-// types of metrics
+// MetricsType - types of metrics
 type MetricsType struct {
 	Gauge   GaugeType
 	Counter CounterType
 }
 
-// for get requests in the url
+// MetricsURI - for get requests in the url
 type MetricsURI struct {
 	MetricType string
 	MetricName string
 	MetricVal  string
 }
 
-// app metrics
+// Metrics - app metrics
 type Metrics struct {
 	ID    string   `json:"id"`
 	MType string   `json:"type"`
