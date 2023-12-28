@@ -1,3 +1,4 @@
+// Getting the settings for the application
 package config
 
 import (

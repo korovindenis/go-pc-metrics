@@ -1,3 +1,4 @@
+// The main application, the client part
 package app
 
 import (

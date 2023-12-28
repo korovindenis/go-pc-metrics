@@ -1,3 +1,4 @@
+// the business logic of the client side
 package agentusecase
 
 import (
@@ -83,7 +84,6 @@ func (a *Agent) UpdateGauge() error {
 }
 
 func (a *Agent) GetGauge() (entity.GaugeType, error) {
-
 	return a.metrics.Gauge, nil
 }
 

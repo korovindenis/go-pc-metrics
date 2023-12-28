@@ -1,6 +1,8 @@
+// The main application, the backend
 package app
 
 import (
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/server/middleware"
@@ -59,6 +61,9 @@ func Run(cfg cfg, handler serverHandler, log log) error {
 	router.POST("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetric)
 	router.POST("/update/", handler.ReceptionMetric)
 	router.POST("/updates/", handler.ReceptionMetrics)
+
+	// add pprof
+	pprof.Register(router)
 
 	// start server
 	return router.Run(httpAddress)
