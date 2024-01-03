@@ -52,14 +52,11 @@ func TestConfigAdapter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set environment variables
 			tt.setEnvVariables()
 
-			// Create config adapter
 			adapter, err := New()
 			assert.NoError(t, err, "New should not return an error")
 
-			// Verify values
 			assert.Equal(t, tt.expectedServerAddr, adapter.GetServerAddress())
 			assert.Equal(t, tt.expectedSchemeAddr, adapter.GetServerAddressWithScheme())
 			assert.Equal(t, tt.expectedReportInt, adapter.GetReportInterval())
