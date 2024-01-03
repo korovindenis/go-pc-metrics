@@ -13,10 +13,12 @@ type Storage struct {
 	MetricsType entity.MetricsType
 }
 
+//go:generate mockery --name log --exported
 type log interface {
 	Info(msg string, fields ...zapcore.Field)
 }
 
+//go:generate mockery --name cfg --exported
 type cfg interface {
 }
 
