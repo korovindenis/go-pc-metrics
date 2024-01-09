@@ -17,6 +17,18 @@ const (
 	ExitWithError
 )
 
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
+func init() {
+	buildVersion = "N/A"
+	buildDate = "N/A"
+	buildDate = "N/A"
+}
+
 func main() {
 	// init config (flags and env)
 	cfg, err := config.New()
