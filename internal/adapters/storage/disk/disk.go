@@ -16,11 +16,13 @@ type Storage struct {
 	metrics  entity.MetricsType
 }
 
+//go:generate mockery --name cfg --exported
 type cfg interface {
 	GetFileStoragePath() string
 	GetRestore() bool
 }
 
+//go:generate mockery --name log --exported
 type log interface {
 	Info(msg string, fields ...zapcore.Field)
 }

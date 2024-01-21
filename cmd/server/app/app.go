@@ -30,8 +30,12 @@ type log interface {
 	Error(msg string, fields ...zapcore.Field)
 }
 
+func New() chan int {
+	return make(chan int)
+}
+
 // server main
-func Run(cfg cfg, handler serverHandler, log log) error {
+func Run(cfg cfg, resultCh chan int, handler serverHandler, log log) error {
 	secretKey := cfg.GetKey()
 	httpAddress := cfg.GetServerAddress()
 	router := gin.Default()
@@ -67,4 +71,8 @@ func Run(cfg cfg, handler serverHandler, log log) error {
 
 	// start server
 	return router.Run(httpAddress)
+}
+
+func Stop(resultCh chan int) {
+	close(resultCh)
 }

@@ -2,6 +2,8 @@
 package config
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"strconv"
 	"time"
@@ -15,34 +17,36 @@ const (
 	Disk = "disk"
 )
 
-type configAdapter struct {
-	restore                  bool
-	storeInterval            int
-	httpAddress              string
+type ConfigAdapter struct {
+	Restore                  bool   `env:"RESTORE" json:"restore"`
+	StoreInterval            int    `env:"STORE_INTERVAL" json:"store_interval"`
+	HttpAddress              string `env:"ADDRESS" json:"address"`
 	logsLevel                string
-	databaseConnectionString string
-	fileStoragePath          string
+	DatabaseConnectionString string `env:"DATABASE_DSN" json:"database_dsn"`
+	FileStoragePath          string `env:"STORE_PATH" json:"store_path"`
 	storageType              string
 	key                      string
-	cryptoKeyPath            string
+	CryptoKeyPath            string `env:"CRYPTO_KEY" json:"crypto_key"`
+	useCryptoKey             bool
+	configFilePath           string
 }
 
-func New() (*configAdapter, error) {
-	adapter := configAdapter{}
+func New() (*ConfigAdapter, error) {
+	adapter := ConfigAdapter{}
 	rootCmd := &cobra.Command{
 		Use:   "go-pc-metrics",
 		Short: "metrics",
 	}
 
 	// get data from flags
-	rootCmd.Flags().StringVarP(&adapter.httpAddress, "address", "a", "localhost:8080", "HTTP server address")
+	rootCmd.Flags().StringVarP(&adapter.HttpAddress, "address", "a", "localhost:8080", "HTTP server address")
 	rootCmd.Flags().StringVarP(&adapter.logsLevel, "logs", "l", "info", "log level")
-	rootCmd.Flags().IntVarP(&adapter.storeInterval, "store_interval", "i", 300, "Interval for save data to disk")
-	rootCmd.Flags().StringVarP(&adapter.fileStoragePath, "file_storage_path", "f", "./tmp/metrics-db.json", "Log file path")
-	rootCmd.Flags().BoolVarP(&adapter.restore, "restore", "r", true, "Load prev. data from file")
-	rootCmd.Flags().StringVarP(&adapter.databaseConnectionString, "database_dsn", "d", "host=127.0.0.1 user=go password=go dbname=go sslmode=disable", "Database connection string")
+	rootCmd.Flags().IntVarP(&adapter.StoreInterval, "store_interval", "i", 300, "Interval for save data to disk")
+	rootCmd.Flags().StringVarP(&adapter.FileStoragePath, "file_storage_path", "f", "./tmp/metrics-db.json", "Log file path")
+	rootCmd.Flags().BoolVarP(&adapter.Restore, "restore", "r", true, "Load prev. data from file")
+	rootCmd.Flags().StringVarP(&adapter.DatabaseConnectionString, "database_dsn", "d", "host=127.0.0.1 user=go password=go dbname=go sslmode=disable", "Database connection string")
 	rootCmd.Flags().StringVarP(&adapter.key, "key", "k", "", "Key string")
-	rootCmd.Flags().StringVarP(&adapter.cryptoKeyPath, "cryptoKey", "crypto-key", "", "Path to key file")
+	rootCmd.Flags().StringVarP(&adapter.CryptoKeyPath, "crypto-key", "y", "", "Path to key file")
 
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
@@ -57,79 +61,92 @@ func New() (*configAdapter, error) {
 	// if env var not empty
 	// get data from env
 	if envHTTPAddress, err := getEnvVariable("ADDRESS"); err == nil {
-		adapter.httpAddress = envHTTPAddress
+		adapter.HttpAddress = envHTTPAddress
 	}
 	if storeInterval, err := getEnvVariable("STORE_INTERVAL"); err == nil {
-		adapter.storeInterval, err = strconv.Atoi(storeInterval)
+		adapter.StoreInterval, err = strconv.Atoi(storeInterval)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if fileStoragePath, err := getEnvVariable("FILE_STORAGE_PATH"); err == nil {
-		adapter.fileStoragePath = fileStoragePath
+		adapter.FileStoragePath = fileStoragePath
 		adapter.storageType = Disk
 	}
 	if restore, err := getEnvVariable("RESTORE"); err == nil {
-		adapter.restore, err = strconv.ParseBool(restore)
+		adapter.Restore, err = strconv.ParseBool(restore)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if databaseConnectionString, err := getEnvVariable("DATABASE_DSN"); err == nil {
-		adapter.databaseConnectionString = databaseConnectionString
+		adapter.DatabaseConnectionString = databaseConnectionString
 		adapter.storageType = Bd
 	}
 	if envKey, err := getEnvVariable("KEY"); err == nil {
 		adapter.key = envKey
 	}
-	if envKey, err := getEnvVariable("CRYPTO_KEY"); err == nil {
-		adapter.cryptoKeyPath = envKey
+	if pathKey, err := getEnvVariable("CRYPTO_KEY"); err == nil {
+		adapter.CryptoKeyPath = pathKey
+	}
+
+	// get data from config
+	if adapter.configFilePath != "" {
+		cfgFile, err := adapter.readConfig()
+		if err == nil {
+			return &cfgFile, nil
+		}
 	}
 	return &adapter, nil
 }
 
-func (f *configAdapter) GetServerAddress() string {
-	return f.httpAddress
+func (f *ConfigAdapter) GetServerAddress() string {
+	return f.HttpAddress
 }
 
-func (f *configAdapter) GetServerAddressWithScheme() string {
+func (f *ConfigAdapter) GetServerAddressWithScheme() string {
 	return "http://" + f.GetServerAddress()
 }
 
-func (f *configAdapter) GetLogsLevel() string {
+func (f *ConfigAdapter) GetLogsLevel() string {
 	return f.logsLevel
 }
 
-func (f *configAdapter) GetStoreInterval() time.Duration {
-	if f.storeInterval == 0 {
+func (f *ConfigAdapter) GetStoreInterval() time.Duration {
+	if f.StoreInterval == 0 {
 		return 1 * time.Second
 	}
-	return time.Duration(f.storeInterval) * time.Second
+	return time.Duration(f.StoreInterval) * time.Second
 }
 
-func (f *configAdapter) GetFileStoragePath() string {
-	return f.fileStoragePath
+func (f *ConfigAdapter) GetFileStoragePath() string {
+	return f.FileStoragePath
 }
 
-func (f *configAdapter) GetRestore() bool {
-	return f.restore
+func (f *ConfigAdapter) GetRestore() bool {
+	return f.Restore
 }
 
-func (f *configAdapter) GetDatabaseConnectionString() string {
-	return f.databaseConnectionString
+func (f *ConfigAdapter) GetDatabaseConnectionString() string {
+	return f.DatabaseConnectionString
 }
 
-func (f *configAdapter) GetStorageType() string {
+func (f *ConfigAdapter) GetStorageType() string {
 	return f.storageType
 }
 
-func (f *configAdapter) GetKey() string {
-	if f.cryptoKeyPath != "" {
-		if keyContent, err := os.ReadFile(f.cryptoKeyPath); err != nil {
+func (f *ConfigAdapter) GetKey() string {
+	if f.CryptoKeyPath != "" {
+		if keyContent, err := os.ReadFile(f.CryptoKeyPath); err != nil {
+			f.useCryptoKey = true
 			return string(keyContent)
 		}
 	}
 	return f.key
+}
+
+func (f *ConfigAdapter) UseCryptoKey() bool {
+	return f.useCryptoKey
 }
 
 func getEnvVariable(varName string) (string, error) {
@@ -137,4 +154,19 @@ func getEnvVariable(varName string) (string, error) {
 		return envVarValue, nil
 	}
 	return "", entity.ErrEnvVarNotFound
+}
+
+func (f *ConfigAdapter) readConfig() (ConfigAdapter, error) {
+	flags := new(ConfigAdapter)
+
+	data, err := os.ReadFile(f.configFilePath)
+	if err != nil {
+		return *flags, err
+	}
+	reader := bytes.NewReader(data)
+	if err := json.NewDecoder(reader).Decode(&flags); err != nil {
+		return *flags, err
+	}
+
+	return *flags, nil
 }

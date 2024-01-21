@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/korovindenis/go-pc-metrics/cmd/agent/app"
 	"github.com/korovindenis/go-pc-metrics/internal/agent/config"
@@ -30,6 +32,9 @@ func init() {
 }
 
 func main() {
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+
 	// init config (flags and env)
 	cfg, err := config.New()
 	if err != nil {
@@ -54,9 +59,16 @@ func main() {
 	// run agent
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if err := app.Run(ctx, agentUsecase, logger, cfg); err != nil {
+
+	appNew := app.New()
+	if err := app.Run(ctx, appNew, agentUsecase, logger, cfg); err != nil {
 		logger.Error("run agent", zap.Error(err))
 		os.Exit(ExitWithError)
 	}
+
+	// end work
+	<-shutdown
+	app.Stop(appNew)
+
 	os.Exit(ExitSucces)
 }

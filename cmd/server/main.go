@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/korovindenis/go-pc-metrics/cmd/server/app"
 	"github.com/korovindenis/go-pc-metrics/internal/adapters/storage/disk"
@@ -39,6 +41,9 @@ func init() {
 }
 
 func main() {
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+
 	// init config (flags and env)
 	cfg, err := config.New()
 	if err != nil {
@@ -77,7 +82,7 @@ func main() {
 	}
 
 	// init handlers
-	serverHandler, err := serverhandler.New(serverUsecase)
+	serverHandler, err := serverhandler.New(serverUsecase, cfg)
 	if err != nil {
 		logger.Error("init handlers", zap.Error(err))
 		os.Exit(ExitWithError)
@@ -92,9 +97,15 @@ func main() {
 	}
 
 	// run web server
-	if err := app.Run(cfg, serverHandler, logger); err != nil {
+	appNew := app.New()
+	if err := app.Run(cfg, appNew, serverHandler, logger); err != nil {
 		logger.Error("run web server", zap.Error(err))
 		os.Exit(ExitWithError)
 	}
+
+	// end work
+	<-shutdown
+	app.Stop(appNew)
+
 	os.Exit(ExitSucces)
 }
