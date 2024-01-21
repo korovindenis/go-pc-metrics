@@ -16,6 +16,7 @@ type configAdapter struct {
 	logsLevel      string
 	key            string
 	rateLimit      int
+	cryptoKeyPath  string
 }
 
 func New() (*configAdapter, error) {
@@ -32,6 +33,7 @@ func New() (*configAdapter, error) {
 	rootCmd.Flags().IntVarP(&adapter.pollInterval, "poll", "p", 2, "Metrics poll interval")
 	rootCmd.Flags().StringVarP(&adapter.key, "key", "k", "", "Key string")
 	rootCmd.Flags().IntVarP(&adapter.rateLimit, "limit", "l", 1, "Limit http reg")
+	rootCmd.Flags().StringVarP(&adapter.cryptoKeyPath, "cryptoKey", "crypto-key", "", "Path to key file")
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
 	}
@@ -62,6 +64,9 @@ func New() (*configAdapter, error) {
 			return nil, err
 		}
 	}
+	if envKey, err := getEnvVariable("CRYPTO_KEY"); err == nil {
+		adapter.cryptoKeyPath = envKey
+	}
 	return &adapter, nil
 }
 
@@ -86,6 +91,11 @@ func (f *configAdapter) GetLogsLevel() string {
 }
 
 func (f *configAdapter) GetKey() string {
+	if f.cryptoKeyPath != "" {
+		if keyContent, err := os.ReadFile(f.cryptoKeyPath); err != nil {
+			return string(keyContent)
+		}
+	}
 	return f.key
 }
 
