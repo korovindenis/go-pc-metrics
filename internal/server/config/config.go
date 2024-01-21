@@ -24,6 +24,7 @@ type configAdapter struct {
 	fileStoragePath          string
 	storageType              string
 	key                      string
+	cryptoKeyPath            string
 }
 
 func New() (*configAdapter, error) {
@@ -41,6 +42,7 @@ func New() (*configAdapter, error) {
 	rootCmd.Flags().BoolVarP(&adapter.restore, "restore", "r", true, "Load prev. data from file")
 	rootCmd.Flags().StringVarP(&adapter.databaseConnectionString, "database_dsn", "d", "host=127.0.0.1 user=go password=go dbname=go sslmode=disable", "Database connection string")
 	rootCmd.Flags().StringVarP(&adapter.key, "key", "k", "", "Key string")
+	rootCmd.Flags().StringVarP(&adapter.cryptoKeyPath, "cryptoKey", "crypto-key", "", "Path to key file")
 
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
@@ -79,6 +81,9 @@ func New() (*configAdapter, error) {
 	}
 	if envKey, err := getEnvVariable("KEY"); err == nil {
 		adapter.key = envKey
+	}
+	if envKey, err := getEnvVariable("CRYPTO_KEY"); err == nil {
+		adapter.cryptoKeyPath = envKey
 	}
 	return &adapter, nil
 }
@@ -119,6 +124,11 @@ func (f *configAdapter) GetStorageType() string {
 }
 
 func (f *configAdapter) GetKey() string {
+	if f.cryptoKeyPath != "" {
+		if keyContent, err := os.ReadFile(f.cryptoKeyPath); err != nil {
+			return string(keyContent)
+		}
+	}
 	return f.key
 }
 
