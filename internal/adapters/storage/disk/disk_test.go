@@ -13,11 +13,11 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-const DISK_PATH = "./disk"
+const diskPath = "./disk"
 
 func TestNewMemoryStorage(t *testing.T) {
 	cfg := mocks.NewCfg(t)
-	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetFileStoragePath").Return(diskPath).Maybe()
 	cfg.On("GetRestore").Return(false).Maybe()
 
 	log := mocks.NewLog(t)
@@ -32,7 +32,7 @@ func TestNewMemoryStorage(t *testing.T) {
 
 func TestStorage_SaveAllData(t *testing.T) {
 	cfg := mocks.NewCfg(t)
-	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetFileStoragePath").Return(diskPath).Maybe()
 	cfg.On("GetRestore").Return(false).Maybe()
 
 	log := mocks.NewLog(t)
@@ -104,7 +104,7 @@ func TestStorage_SaveAllData(t *testing.T) {
 
 func TestStorage_GetAllData(t *testing.T) {
 	cfg := mocks.NewCfg(t)
-	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetFileStoragePath").Return(diskPath).Maybe()
 	cfg.On("GetRestore").Return(false).Maybe()
 
 	log := mocks.NewLog(t)
@@ -139,7 +139,7 @@ func TestStorage_GetAllData(t *testing.T) {
 
 func TestStorage_GetCounter(t *testing.T) {
 	cfg := mocks.NewCfg(t)
-	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetFileStoragePath").Return(diskPath).Maybe()
 	cfg.On("GetRestore").Return(false).Maybe()
 
 	log := mocks.NewLog(t)
@@ -194,7 +194,7 @@ func TestStorage_GetCounter(t *testing.T) {
 
 func TestStorage_SaveCounter(t *testing.T) {
 	cfg := mocks.NewCfg(t)
-	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetFileStoragePath").Return(diskPath).Maybe()
 	cfg.On("GetRestore").Return(false).Maybe()
 
 	log := mocks.NewLog(t)
@@ -242,7 +242,7 @@ func TestStorage_SaveCounter(t *testing.T) {
 
 func TestStorage_GetGauge(t *testing.T) {
 	cfg := mocks.NewCfg(t)
-	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetFileStoragePath").Return(diskPath).Maybe()
 	cfg.On("GetRestore").Return(false).Maybe()
 
 	log := mocks.NewLog(t)
@@ -297,7 +297,7 @@ func TestStorage_GetGauge(t *testing.T) {
 
 func TestStorage_SaveGauge(t *testing.T) {
 	cfg := mocks.NewCfg(t)
-	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetFileStoragePath").Return(diskPath).Maybe()
 	cfg.On("GetRestore").Return(false).Maybe()
 
 	log := mocks.NewLog(t)

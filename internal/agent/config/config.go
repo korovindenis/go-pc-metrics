@@ -14,7 +14,7 @@ import (
 type ConfigAdapter struct {
 	ReportInterval int    `env:"REPORT_INTERVAL" json:"report_interval"`
 	PollInterval   int    `env:"POLL_INTERVAL" json:"poll_interval"`
-	HttpAddress    string `env:"ADDRESS" json:"address"`
+	HTTPAddress    string `env:"ADDRESS" json:"address"`
 	RateLimit      int    `env:"RATE_LIMIT" json:"rate_limit"`
 	CryptoKeyPath  string `env:"CRYPTO_KEY" json:"crypto_key"`
 	logsLevel      string
@@ -31,7 +31,7 @@ func New() (*ConfigAdapter, error) {
 	}
 
 	// get data from flags
-	rootCmd.Flags().StringVarP(&adapter.HttpAddress, "address", "a", "localhost:8080", "HTTP server address")
+	rootCmd.Flags().StringVarP(&adapter.HTTPAddress, "address", "a", "localhost:8080", "HTTP server address")
 	rootCmd.Flags().StringVarP(&adapter.logsLevel, "logs", "i", "info", "log level")
 	rootCmd.Flags().IntVarP(&adapter.ReportInterval, "report", "r", 10, "Metrics report interval")
 	rootCmd.Flags().IntVarP(&adapter.PollInterval, "poll", "p", 2, "Metrics poll interval")
@@ -47,7 +47,7 @@ func New() (*ConfigAdapter, error) {
 	// if env var not empty
 	// get data from env
 	if envHTTPAddress, err := getEnvVariable("ADDRESS"); err == nil {
-		adapter.HttpAddress = envHTTPAddress
+		adapter.HTTPAddress = envHTTPAddress
 	}
 	if reportInterval, err := getEnvVariable("REPORT_INTERVAL"); err == nil {
 		adapter.ReportInterval, err = strconv.Atoi(reportInterval)
@@ -85,7 +85,7 @@ func New() (*ConfigAdapter, error) {
 }
 
 func (f *ConfigAdapter) GetServerAddress() string {
-	return f.HttpAddress
+	return f.HTTPAddress
 }
 
 func (f *ConfigAdapter) GetServerAddressWithScheme() string {

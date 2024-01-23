@@ -20,7 +20,7 @@ const (
 type ConfigAdapter struct {
 	Restore                  bool   `env:"RESTORE" json:"restore"`
 	StoreInterval            int    `env:"STORE_INTERVAL" json:"store_interval"`
-	HttpAddress              string `env:"ADDRESS" json:"address"`
+	HTTPAddress              string `env:"ADDRESS" json:"address"`
 	logsLevel                string
 	DatabaseConnectionString string `env:"DATABASE_DSN" json:"database_dsn"`
 	FileStoragePath          string `env:"STORE_PATH" json:"store_path"`
@@ -39,7 +39,7 @@ func New() (*ConfigAdapter, error) {
 	}
 
 	// get data from flags
-	rootCmd.Flags().StringVarP(&adapter.HttpAddress, "address", "a", "localhost:8080", "HTTP server address")
+	rootCmd.Flags().StringVarP(&adapter.HTTPAddress, "address", "a", "localhost:8080", "HTTP server address")
 	rootCmd.Flags().StringVarP(&adapter.logsLevel, "logs", "l", "info", "log level")
 	rootCmd.Flags().IntVarP(&adapter.StoreInterval, "store_interval", "i", 300, "Interval for save data to disk")
 	rootCmd.Flags().StringVarP(&adapter.FileStoragePath, "file_storage_path", "f", "./tmp/metrics-db.json", "Log file path")
@@ -61,7 +61,7 @@ func New() (*ConfigAdapter, error) {
 	// if env var not empty
 	// get data from env
 	if envHTTPAddress, err := getEnvVariable("ADDRESS"); err == nil {
-		adapter.HttpAddress = envHTTPAddress
+		adapter.HTTPAddress = envHTTPAddress
 	}
 	if storeInterval, err := getEnvVariable("STORE_INTERVAL"); err == nil {
 		adapter.StoreInterval, err = strconv.Atoi(storeInterval)
@@ -101,7 +101,7 @@ func New() (*ConfigAdapter, error) {
 }
 
 func (f *ConfigAdapter) GetServerAddress() string {
-	return f.HttpAddress
+	return f.HTTPAddress
 }
 
 func (f *ConfigAdapter) GetServerAddressWithScheme() string {

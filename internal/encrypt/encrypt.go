@@ -86,6 +86,9 @@ func Decrypt(privateKeyPath, encryptedMessage string) (string, error) {
 		privateKey,
 		pemStringToCipher(encryptedMessage),
 	)
+	if err != nil {
+		return "", err
+	}
 
 	return string(plainMessage), nil
 }
