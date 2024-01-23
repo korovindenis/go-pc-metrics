@@ -4,21 +4,307 @@ package disk
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/korovindenis/go-pc-metrics/internal/adapters/storage/disk/mocks"
+	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-func TestStorage_SaveGauge(t *testing.T) {
+const DISK_PATH = "./disk"
+
+func TestNewMemoryStorage(t *testing.T) {
 	cfg := mocks.NewCfg(t)
-	cfg.On("GetFileStoragePath").Return("").Maybe()
+	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetRestore").Return(false).Maybe()
+
+	log := mocks.NewLog(t)
+	log.On("Info", mock.Anything).Return("")
+	storage, err := New(cfg, log)
+
+	// Assert
+	assert.NoError(t, err, "New should not return an error")
+	assert.NotNil(t, storage, "Storage should not be nil")
+
+}
+
+func TestStorage_SaveAllData(t *testing.T) {
+	cfg := mocks.NewCfg(t)
+	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
 	cfg.On("GetRestore").Return(false).Maybe()
 
 	log := mocks.NewLog(t)
 	log.On("Info", mock.Anything).Return("")
 
 	disk, _ := New(cfg, log)
+	disk.metrics.Gauge = make(entity.GaugeType)
+
+	ctx := context.Background()
+	floatVal := float64(1)
+	intVal := int64(1)
+
+	tests := []struct {
+		name string
+		args []entity.Metrics
+		err  error
+	}{
+		{
+			name: "positive gauge",
+			args: []entity.Metrics{
+				{
+					ID:    "cpu",
+					MType: "gauge",
+					Value: &floatVal,
+				},
+			},
+		},
+		{
+			name: "positive counter",
+			args: []entity.Metrics{
+				{
+					ID:    "cpu",
+					MType: "counter",
+					Delta: &intVal,
+				},
+			},
+		},
+		{
+			name: "negative",
+			err:  errors.New("sendMetrics(): metricsVal not recognized"),
+			args: []entity.Metrics{
+				{
+					ID:    "cpu",
+					MType: "negative",
+					Delta: &intVal,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Act
+			err := disk.SaveAllData(ctx, tt.args)
+
+			// Assert
+			if err != nil && tt.err == nil {
+				t.Fatal(err)
+			}
+			if err != nil {
+				if tt.args[0].MType == "gauge" {
+					assert.Equal(t, disk.metrics.Gauge[tt.args[0].ID], *tt.args[0].Value)
+				} else {
+					assert.Equal(t, disk.metrics.Counter[tt.args[0].ID], *tt.args[0].Delta)
+				}
+			}
+		})
+	}
+}
+
+func TestStorage_GetAllData(t *testing.T) {
+	cfg := mocks.NewCfg(t)
+	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetRestore").Return(false).Maybe()
+
+	log := mocks.NewLog(t)
+	log.On("Info", mock.Anything).Return("")
+
+	disk, _ := New(cfg, log)
+	disk.metrics.Gauge = make(entity.GaugeType)
+
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{
+			name: "positive",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Act
+			data, err := disk.GetAllData(ctx)
+
+			// Assert
+			if err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, data, disk.metrics)
+		})
+	}
+}
+
+func TestStorage_GetCounter(t *testing.T) {
+	cfg := mocks.NewCfg(t)
+	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetRestore").Return(false).Maybe()
+
+	log := mocks.NewLog(t)
+	log.On("Info", mock.Anything).Return("")
+
+	disk, _ := New(cfg, log)
+	disk.metrics.Gauge = make(entity.GaugeType)
+
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		arg  struct {
+			name string
+			val  int64
+		}
+		err error
+	}{
+		{
+			name: "positive",
+			arg: struct {
+				name string
+				val  int64
+			}{
+				name: "cpu",
+				val:  int64(1),
+			},
+		},
+		{
+			name: "negative",
+			err:  entity.ErrMetricNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Asset
+			if tt.arg.name != "" {
+				disk.metrics.Counter[tt.arg.name] = tt.arg.val
+			}
+
+			// Act
+			data, err := disk.GetCounter(ctx, tt.arg.name)
+
+			// Assert
+			if err != tt.err {
+				t.Fatal(err)
+			}
+			assert.Equal(t, data, disk.metrics.Counter[tt.arg.name])
+		})
+	}
+}
+
+func TestStorage_SaveCounter(t *testing.T) {
+	cfg := mocks.NewCfg(t)
+	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetRestore").Return(false).Maybe()
+
+	log := mocks.NewLog(t)
+	log.On("Info", mock.Anything).Return("")
+
+	disk, _ := New(cfg, log)
+	disk.metrics.Gauge = make(entity.GaugeType)
+
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		arg  struct {
+			name string
+			val  int64
+		}
+		err error
+	}{
+		{
+			name: "positive",
+			arg: struct {
+				name string
+				val  int64
+			}{
+				name: "cpu",
+				val:  int64(1),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Asset
+			disk.metrics.Counter[tt.arg.name] = tt.arg.val
+
+			// Act
+			err := disk.SaveCounter(ctx, tt.arg.name, tt.arg.val)
+
+			// Assert
+			if err != tt.err {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestStorage_GetGauge(t *testing.T) {
+	cfg := mocks.NewCfg(t)
+	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetRestore").Return(false).Maybe()
+
+	log := mocks.NewLog(t)
+	log.On("Info", mock.Anything).Return("")
+
+	disk, _ := New(cfg, log)
+	disk.metrics.Gauge = make(entity.GaugeType)
+
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		arg  struct {
+			name string
+			val  float64
+		}
+		err error
+	}{
+		{
+			name: "positive",
+			arg: struct {
+				name string
+				val  float64
+			}{
+				name: "cpu",
+				val:  float64(1),
+			},
+		},
+		{
+			name: "negative",
+			err:  entity.ErrMetricNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Asset
+			if tt.arg.name != "" {
+				disk.metrics.Gauge[tt.arg.name] = tt.arg.val
+			}
+
+			// Act
+			data, err := disk.GetGauge(ctx, tt.arg.name)
+
+			// Assert
+			if err != tt.err {
+				t.Fatal(err)
+			}
+			assert.Equal(t, data, disk.metrics.Gauge[tt.arg.name])
+		})
+	}
+}
+
+func TestStorage_SaveGauge(t *testing.T) {
+	cfg := mocks.NewCfg(t)
+	cfg.On("GetFileStoragePath").Return(DISK_PATH).Maybe()
+	cfg.On("GetRestore").Return(false).Maybe()
+
+	log := mocks.NewLog(t)
+	log.On("Info", mock.Anything).Return("")
+
+	disk, _ := New(cfg, log)
+	disk.metrics.Gauge = make(entity.GaugeType)
 
 	ctx := context.Background()
 

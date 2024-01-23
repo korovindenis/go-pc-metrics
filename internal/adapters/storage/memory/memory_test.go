@@ -18,8 +18,9 @@ func TestNewMemoryStorage(t *testing.T) {
 	log := mocks.NewLog(t)
 	log.On("Info", mock.Anything).Return("")
 	storage, err := New(cfg, log)
-	assert.NoError(t, err, "New should not return an error")
 
+	// Assert
+	assert.NoError(t, err, "New should not return an error")
 	assert.NotNil(t, storage, "Storage should not be nil")
 
 }
