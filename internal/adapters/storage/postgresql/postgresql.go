@@ -22,10 +22,12 @@ type Storage struct {
 	db *sql.DB
 }
 
+//go:generate mockery --name log --exported
 type log interface {
 	Info(msg string, fields ...zapcore.Field)
 }
 
+//go:generate mockery --name cfg --exported
 type cfg interface {
 	GetFileStoragePath() string
 	GetRestore() bool

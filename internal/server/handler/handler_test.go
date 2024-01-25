@@ -18,7 +18,10 @@ import (
 
 func TestHandler_ReceptionMetric(t *testing.T) {
 	usecase := mocks.NewUsecase(t)
-	handler, _ := New(usecase)
+	cfg := mocks.NewCfg(t)
+	cfg.On("UseCryptoKey").Return(false)
+	cfg.On("GetKey").Return("")
+	handler, _ := New(usecase, cfg)
 	router := gin.Default()
 	router.GET("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetric)
 
@@ -116,7 +119,10 @@ func TestHandler_ReceptionMetric(t *testing.T) {
 
 func TestHandler_Ping(t *testing.T) {
 	usecase := mocks.NewUsecase(t)
-	handler, _ := New(usecase)
+	cfg := mocks.NewCfg(t)
+	cfg.On("UseCryptoKey").Return(false)
+	cfg.On("GetKey").Return("")
+	handler, _ := New(usecase, cfg)
 	router := gin.Default()
 	router.GET("/ping", handler.Ping)
 
@@ -162,7 +168,10 @@ func TestHandler_Ping(t *testing.T) {
 
 func TestHandler_OutputAllMetrics(t *testing.T) {
 	usecase := mocks.NewUsecase(t)
-	handler, _ := New(usecase)
+	cfg := mocks.NewCfg(t)
+	cfg.On("UseCryptoKey").Return(false)
+	cfg.On("GetKey").Return("")
+	handler, _ := New(usecase, cfg)
 	router := gin.Default()
 	router.GET("/", handler.OutputAllMetrics)
 
@@ -202,7 +211,9 @@ func TestHandler_OutputAllMetrics(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	mockUsecase := mocks.NewUsecase(t)
-
+	cfg := mocks.NewCfg(t)
+	cfg.On("UseCryptoKey").Return(false)
+	cfg.On("GetKey").Return("")
 	tests := []struct {
 		name    string
 		u       usecase
@@ -217,7 +228,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.u)
+			got, err := New(tt.u, cfg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %+v, wantErr %+v", err, tt.wantErr)
 				return
@@ -231,7 +242,11 @@ func TestNew(t *testing.T) {
 
 func TestHandler_ReceptionMetrics(t *testing.T) {
 	usecase := mocks.NewUsecase(t)
-	handler, _ := New(usecase)
+	cfg := mocks.NewCfg(t)
+	cfg.On("UseCryptoKey").Return(false)
+	cfg.On("GetKey").Return("")
+
+	handler, _ := New(usecase, cfg)
 	router := gin.Default()
 	router.POST("/updates", handler.ReceptionMetrics)
 

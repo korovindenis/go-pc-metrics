@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"github.com/korovindenis/go-pc-metrics/internal/encrypt"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -40,6 +41,7 @@ type config interface {
 	GetReportInterval() time.Duration
 	GetKey() string
 	GetRateLimit() int
+	UseCryptoKey() bool
 }
 
 type resultWorkerMetric struct {
@@ -55,13 +57,16 @@ func Run(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config)
 	go updateWorker(ctx, agentUsecase, log, cfg, resultCh)
 	go sendWorker(ctx, agentUsecase, log, cfg, resultCh)
 
-	for res := range resultCh {
-		if res.err != nil {
-			return fmt.Errorf("agentapp Exec updateWorker: %s", res.err)
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case res := <-resultCh:
+			if res.err != nil {
+				return fmt.Errorf("agentapp Exec updateWorker: %s", res.err)
+			}
 		}
 	}
-
-	return nil
 }
 
 func updateWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config, resultCh chan<- resultWorkerMetric) {
@@ -96,6 +101,7 @@ func sendWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg 
 	httpServerAddress := cfg.GetServerAddressWithScheme()
 	sendTicker := time.NewTicker(cfg.GetReportInterval())
 	secretKey := cfg.GetKey()
+	useCryptoKey := cfg.UseCryptoKey()
 	defer sendTicker.Stop()
 
 	for {
@@ -110,7 +116,7 @@ func sendWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg 
 					err: err,
 				}
 			}
-			err = sendMetrics(restClient, gaugeVal, log, httpServerAddress, secretKey)
+			err = sendMetrics(restClient, gaugeVal, log, httpServerAddress, secretKey, useCryptoKey)
 			if err != nil {
 				resultCh <- resultWorkerMetric{
 					err: err,
@@ -122,7 +128,7 @@ func sendWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg 
 					err: err,
 				}
 			}
-			err = sendMetrics(restClient, counterVal, log, httpServerAddress, secretKey)
+			err = sendMetrics(restClient, counterVal, log, httpServerAddress, secretKey, useCryptoKey)
 			if err != nil {
 				resultCh <- resultWorkerMetric{
 					err: err,
@@ -136,7 +142,7 @@ func sendWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg 
 }
 
 // prepare data
-func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServerAddress, secretKey string) error {
+func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServerAddress, secretKey string, useCryptoKey bool) error {
 	var metrics []entity.Metrics
 
 	switch v := metricsVal.(type) {
@@ -163,14 +169,14 @@ func sendMetrics(restClient *resty.Client, metricsVal any, log logger, httpServe
 		return errors.New("sendMetrics(): metricsVal not recognized")
 	}
 
-	if err := httpReq(restClient, log, httpServerAddress, secretKey, metrics); err != nil {
+	if err := httpReq(restClient, log, httpServerAddress, secretKey, useCryptoKey, metrics); err != nil {
 		return fmt.Errorf("sendMetrics entity.CounterType: %s", err)
 	}
 	return nil
 }
 
 // send data
-func httpReq(restyClient *resty.Client, log logger, httpServerAddress, secretKey string, metrics []entity.Metrics) error {
+func httpReq(restyClient *resty.Client, log logger, httpServerAddress, secretKey string, useCryptoKey bool, metrics []entity.Metrics) error {
 
 	jsonBody, err := json.Marshal(metrics)
 	if err != nil {
@@ -195,11 +201,18 @@ func httpReq(restyClient *resty.Client, log logger, httpServerAddress, secretKey
 		SetBody(compressedBody.Bytes()).
 		EnableTrace()
 
-	var hashSHA256 string
 	if secretKey != "" {
-		hashSHA256, _ = computeHMAC([]byte(jsonBody), secretKey)
-		req.SetHeader("HashSHA256", hashSHA256)
-		log.Info("HashSHA256: " + hashSHA256)
+		if useCryptoKey {
+			encryptedBody, err := encrypt.Encrypt(secretKey, string(jsonBody))
+			if err != nil {
+				log.Info(fmt.Sprintf("error in httpclient: %s", err))
+			}
+			req.SetBody(encryptedBody)
+		} else {
+			hashSHA256, _ := computeHMAC([]byte(jsonBody), secretKey)
+			req.SetHeader("HashSHA256", hashSHA256)
+			log.Info("HashSHA256: " + hashSHA256)
+		}
 	}
 
 	resp, err := req.Execute("POST", httpServerAddress+"/updates/")

@@ -2,6 +2,8 @@
 package app
 
 import (
+	"context"
+
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
@@ -31,7 +33,7 @@ type log interface {
 }
 
 // server main
-func Run(cfg cfg, handler serverHandler, log log) error {
+func Run(ctx context.Context, cfg cfg, handler serverHandler, log log) error {
 	secretKey := cfg.GetKey()
 	httpAddress := cfg.GetServerAddress()
 	router := gin.Default()

@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"github.com/korovindenis/go-pc-metrics/internal/encrypt"
 )
 
 //go:generate mockery --name usecase --exported
@@ -30,13 +31,23 @@ type usecase interface {
 	Ping(ctx context.Context) error
 }
 
-type Handler struct {
-	serverUsecase usecase
+//go:generate mockery --name cfg --exported
+type cfg interface {
+	UseCryptoKey() bool
+	GetKey() string
 }
 
-func New(u usecase) (*Handler, error) {
+type Handler struct {
+	serverUsecase usecase
+	useCryptoKey  bool
+	cryptoKey     string
+}
+
+func New(u usecase, cfg cfg) (*Handler, error) {
 	return &Handler{
 		serverUsecase: u,
+		useCryptoKey:  cfg.UseCryptoKey(),
+		cryptoKey:     cfg.GetKey(),
 	}, nil
 }
 
@@ -149,6 +160,16 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 
 	requestBody, _ := io.ReadAll(teeReader)
 	defer c.Request.Body.Close()
+
+	if s.useCryptoKey {
+		decryptBody, err := encrypt.Decrypt(s.cryptoKey, string(requestBody))
+		if err != nil {
+			c.Error(fmt.Errorf("%s %w", "ReceptionMetrics DecryptData", err))
+			c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)
+			return
+		}
+		requestBody = []byte(decryptBody)
+	}
 
 	if err := json.Unmarshal(requestBody, &metrics); err != nil {
 		c.Error(fmt.Errorf("%s %w", "ReceptionMetrics Unmarshal", err))
