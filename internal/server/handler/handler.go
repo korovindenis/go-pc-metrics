@@ -39,13 +39,15 @@ type cfg interface {
 
 type Handler struct {
 	serverUsecase usecase
-	cfg           cfg
+	useCryptoKey  bool
+	cryptoKey     string
 }
 
 func New(u usecase, cfg cfg) (*Handler, error) {
 	return &Handler{
 		serverUsecase: u,
-		cfg:           cfg,
+		useCryptoKey:  cfg.UseCryptoKey(),
+		cryptoKey:     cfg.GetKey(),
 	}, nil
 }
 
@@ -159,8 +161,8 @@ func (s *Handler) ReceptionMetrics(c *gin.Context) {
 	requestBody, _ := io.ReadAll(teeReader)
 	defer c.Request.Body.Close()
 
-	if s.cfg.UseCryptoKey() {
-		decryptBody, err := encrypt.Decrypt(s.cfg.GetKey(), string(requestBody))
+	if s.useCryptoKey {
+		decryptBody, err := encrypt.Decrypt(s.cryptoKey, string(requestBody))
 		if err != nil {
 			c.Error(fmt.Errorf("%s %w", "ReceptionMetrics DecryptData", err))
 			c.AbortWithError(http.StatusInternalServerError, entity.ErrInternalServerError)

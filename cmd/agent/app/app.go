@@ -49,26 +49,24 @@ type resultWorkerMetric struct {
 	err  error
 }
 
-func New() chan resultWorkerMetric {
-	return make(chan resultWorkerMetric)
-}
-
 // agent main
-func Run(ctx context.Context, resultCh chan resultWorkerMetric, agentUsecase agentUsecase, log logger, cfg config) error {
+func Run(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config) error {
+	resultCh := make(chan resultWorkerMetric)
+	defer close(resultCh)
+
 	go updateWorker(ctx, agentUsecase, log, cfg, resultCh)
 	go sendWorker(ctx, agentUsecase, log, cfg, resultCh)
 
-	for res := range resultCh {
-		if res.err != nil {
-			return fmt.Errorf("agentapp Exec updateWorker: %s", res.err)
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case res := <-resultCh:
+			if res.err != nil {
+				return fmt.Errorf("agentapp Exec updateWorker: %s", res.err)
+			}
 		}
 	}
-
-	return nil
-}
-
-func Stop(resultCh chan resultWorkerMetric) {
-	close(resultCh)
 }
 
 func updateWorker(ctx context.Context, agentUsecase agentUsecase, log logger, cfg config, resultCh chan<- resultWorkerMetric) {

@@ -19,6 +19,8 @@ import (
 func TestHandler_ReceptionMetric(t *testing.T) {
 	usecase := mocks.NewUsecase(t)
 	cfg := mocks.NewCfg(t)
+	cfg.On("UseCryptoKey").Return(false)
+	cfg.On("GetKey").Return("")
 	handler, _ := New(usecase, cfg)
 	router := gin.Default()
 	router.GET("/update/:metricType/:metricName/:metricVal", handler.ReceptionMetric)
@@ -118,6 +120,8 @@ func TestHandler_ReceptionMetric(t *testing.T) {
 func TestHandler_Ping(t *testing.T) {
 	usecase := mocks.NewUsecase(t)
 	cfg := mocks.NewCfg(t)
+	cfg.On("UseCryptoKey").Return(false)
+	cfg.On("GetKey").Return("")
 	handler, _ := New(usecase, cfg)
 	router := gin.Default()
 	router.GET("/ping", handler.Ping)
@@ -165,6 +169,8 @@ func TestHandler_Ping(t *testing.T) {
 func TestHandler_OutputAllMetrics(t *testing.T) {
 	usecase := mocks.NewUsecase(t)
 	cfg := mocks.NewCfg(t)
+	cfg.On("UseCryptoKey").Return(false)
+	cfg.On("GetKey").Return("")
 	handler, _ := New(usecase, cfg)
 	router := gin.Default()
 	router.GET("/", handler.OutputAllMetrics)
@@ -206,6 +212,8 @@ func TestHandler_OutputAllMetrics(t *testing.T) {
 func TestNew(t *testing.T) {
 	mockUsecase := mocks.NewUsecase(t)
 	cfg := mocks.NewCfg(t)
+	cfg.On("UseCryptoKey").Return(false)
+	cfg.On("GetKey").Return("")
 	tests := []struct {
 		name    string
 		u       usecase
@@ -215,7 +223,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "positive",
 			u:    mockUsecase,
-			want: &Handler{serverUsecase: mockUsecase, cfg: cfg},
+			want: &Handler{serverUsecase: mockUsecase},
 		},
 	}
 	for _, tt := range tests {
@@ -236,6 +244,8 @@ func TestHandler_ReceptionMetrics(t *testing.T) {
 	usecase := mocks.NewUsecase(t)
 	cfg := mocks.NewCfg(t)
 	cfg.On("UseCryptoKey").Return(false)
+	cfg.On("GetKey").Return("")
+
 	handler, _ := New(usecase, cfg)
 	router := gin.Default()
 	router.POST("/updates", handler.ReceptionMetrics)

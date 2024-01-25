@@ -2,6 +2,8 @@
 package app
 
 import (
+	"context"
+
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
@@ -30,12 +32,8 @@ type log interface {
 	Error(msg string, fields ...zapcore.Field)
 }
 
-func New() chan int {
-	return make(chan int)
-}
-
 // server main
-func Run(cfg cfg, resultCh chan int, handler serverHandler, log log) error {
+func Run(ctx context.Context, cfg cfg, handler serverHandler, log log) error {
 	secretKey := cfg.GetKey()
 	httpAddress := cfg.GetServerAddress()
 	router := gin.Default()
@@ -71,8 +69,4 @@ func Run(cfg cfg, resultCh chan int, handler serverHandler, log log) error {
 
 	// start server
 	return router.Run(httpAddress)
-}
-
-func Stop(resultCh chan int) {
-	close(resultCh)
 }
