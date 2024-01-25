@@ -70,7 +70,8 @@ func main() {
 	cancel()
 
 	// we are waiting for the completion of the work of all goroutines
-	ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	<-ctx.Done()
 
 	logger.Info("Graceful shutdown complete")
