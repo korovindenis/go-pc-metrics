@@ -96,10 +96,14 @@ func main() {
 		go serverUsecase.SaveAllDataUsecase(ctx, []entity.Metrics{})
 	}
 
-	// run web server
 	appNew := app.New()
-	if err := app.Run(cfg, appNew, serverHandler, logger); err != nil {
-		logger.Error("run web server", zap.Error(err))
+	if cfg.IsGrpc() {
+		err = app.RunGrpc(cfg, appNew, serverHandler, logger)
+	} else {
+		err = app.RunHttp(cfg, appNew, serverHandler, logger)
+	}
+	if err != nil {
+		logger.Error("run http server", zap.Error(err))
 		os.Exit(ExitWithError)
 	}
 

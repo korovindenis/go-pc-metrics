@@ -2,11 +2,14 @@
 package app
 
 import (
+	"net"
+
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/logger"
 	"github.com/korovindenis/go-pc-metrics/internal/server/middleware"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/grpc"
 )
 
 // function handler
@@ -21,6 +24,7 @@ type serverHandler interface {
 // config functions
 type cfg interface {
 	GetServerAddress() string
+	GetTrustedSubnet() string
 	GetKey() string
 }
 
@@ -34,10 +38,11 @@ func New() chan int {
 	return make(chan int)
 }
 
-// server main
-func Run(cfg cfg, resultCh chan int, handler serverHandler, log log) error {
+// http server
+func RunHttp(cfg cfg, resultCh chan int, handler serverHandler, log log) error {
 	secretKey := cfg.GetKey()
 	httpAddress := cfg.GetServerAddress()
+	trustedSubnet := cfg.GetTrustedSubnet()
 	router := gin.Default()
 
 	// html template
@@ -47,6 +52,7 @@ func Run(cfg cfg, resultCh chan int, handler serverHandler, log log) error {
 	router.Use(logger.RequestLogger())
 	router.Use(gin.Recovery())
 	router.Use(middleware.CheckMethod())
+	router.Use(middleware.CheckRealIP(trustedSubnet))
 	router.Use(middleware.ErrorLogging(log))
 	router.Use(middleware.Gzip())
 	router.Use(middleware.GzipResponse())
@@ -72,7 +78,27 @@ func Run(cfg cfg, resultCh chan int, handler serverHandler, log log) error {
 	// start server
 	return router.Run(httpAddress)
 }
+func RunGrpc(cfg cfg, resultCh chan int, handler serverHandler, log log) error {
+	address := cfg.GetServerAddress()
 
+	// Determine the port for the server
+	listen, err := net.Listen("tcp", address)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create a gRPC server without a registered service
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(),
+	)
+
+	// Handle incoming gRPC requests
+	if err := grpcServer.Serve(listen); err != nil {
+		return err
+	}
+
+	return nil
+}
 func Stop(resultCh chan int) {
 	close(resultCh)
 }

@@ -29,6 +29,8 @@ type ConfigAdapter struct {
 	CryptoKeyPath            string `env:"CRYPTO_KEY" json:"crypto_key"`
 	useCryptoKey             bool
 	configFilePath           string
+	TrustedSubnet            string `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
+	isGrpc                   bool
 }
 
 func New() (*ConfigAdapter, error) {
@@ -47,6 +49,8 @@ func New() (*ConfigAdapter, error) {
 	rootCmd.Flags().StringVarP(&adapter.DatabaseConnectionString, "database_dsn", "d", "host=127.0.0.1 user=go password=go dbname=go sslmode=disable", "Database connection string")
 	rootCmd.Flags().StringVarP(&adapter.key, "key", "k", "", "Key string")
 	rootCmd.Flags().StringVarP(&adapter.CryptoKeyPath, "crypto-key", "y", "", "Path to key file")
+	rootCmd.Flags().StringVarP(&adapter.TrustedSubnet, "trusted-subnet", "t", "127.0.0.1/24", "Trusted subnet")
+	rootCmd.Flags().BoolVarP(&adapter.isGrpc, "grpc", "g", false, "Enable grpc server")
 
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
@@ -90,6 +94,10 @@ func New() (*ConfigAdapter, error) {
 		adapter.CryptoKeyPath = pathKey
 	}
 
+	if trustedSubnet, err := getEnvVariable("TRUSTED_SUBNET"); err == nil {
+		adapter.TrustedSubnet = trustedSubnet
+	}
+
 	// get data from config
 	if adapter.configFilePath != "" {
 		cfgFile, err := adapter.readConfig()
@@ -127,6 +135,10 @@ func (f *ConfigAdapter) GetRestore() bool {
 	return f.Restore
 }
 
+func (f *ConfigAdapter) IsGrpc() bool {
+	return f.isGrpc
+}
+
 func (f *ConfigAdapter) GetDatabaseConnectionString() string {
 	return f.DatabaseConnectionString
 }
@@ -147,6 +159,9 @@ func (f *ConfigAdapter) GetKey() string {
 
 func (f *ConfigAdapter) UseCryptoKey() bool {
 	return f.useCryptoKey
+}
+func (f *ConfigAdapter) GetTrustedSubnet() string {
+	return f.TrustedSubnet
 }
 
 func getEnvVariable(varName string) (string, error) {

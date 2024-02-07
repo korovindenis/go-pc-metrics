@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/korovindenis/go-pc-metrics/internal/domain/entity"
+	"github.com/korovindenis/go-pc-metrics/internal/ip"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -29,6 +30,20 @@ func CheckMethod() gin.HandlerFunc {
 		if c.Request.Method != http.MethodPost && c.Request.Method != http.MethodGet {
 			c.AbortWithError(http.StatusMethodNotAllowed, entity.ErrMethodNotAllowed)
 			return
+		}
+		c.Next()
+	}
+}
+
+func CheckRealIP(trustedSubnet string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetHeader("X-Real-IP") != "" {
+			localIp := ip.GetOutbound()
+			trusted, err := ip.CheckInSubnet(localIp.String(), trustedSubnet)
+			if !trusted || err != nil {
+				c.AbortWithError(http.StatusForbidden, entity.ErrForbidden)
+				return
+			}
 		}
 		c.Next()
 	}

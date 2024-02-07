@@ -21,6 +21,7 @@ type ConfigAdapter struct {
 	key            string
 	useCryptoKey   bool
 	configFilePath string
+	isGrpc         bool
 }
 
 func New() (*ConfigAdapter, error) {
@@ -39,6 +40,7 @@ func New() (*ConfigAdapter, error) {
 	rootCmd.Flags().IntVarP(&adapter.RateLimit, "limit", "l", 1, "Limit http reg")
 	rootCmd.Flags().StringVarP(&adapter.CryptoKeyPath, "crypto-key", "y", "", "Path to key file")
 	rootCmd.Flags().StringVarP(&adapter.configFilePath, "config", "o", "", "Path to config file")
+	rootCmd.Flags().BoolVarP(&adapter.isGrpc, "grpc", "g", false, "Accept grpc")
 
 	if err := rootCmd.Execute(); err != nil {
 		return nil, err
@@ -116,6 +118,10 @@ func (f *ConfigAdapter) GetKey() string {
 
 func (f *ConfigAdapter) UseCryptoKey() bool {
 	return f.useCryptoKey
+}
+
+func (f *ConfigAdapter) IsGrpc() bool {
+	return f.isGrpc
 }
 
 func (f *ConfigAdapter) GetRateLimit() int {

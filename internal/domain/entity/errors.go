@@ -16,4 +16,5 @@ var (
 	ErrNotImplementedServerError = errors.New("not implemented server error")
 	ErrStorageInstance           = errors.New("data is not an instance of storage")
 	ErrConfigFileNotFound        = errors.New("config file not found")
+	ErrForbidden                 = errors.New("forbidden")
 )
